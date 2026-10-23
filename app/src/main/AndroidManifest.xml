@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- The game process (Unity's player, ":unity") is declared by the :unity module's manifest. -->
+    <application
+        android:name=".StormDroidApplication"
+        android:appCategory="game"
+        android:largeHeap="true"
+        android:extractNativeLibs="true"
+        android:allowNativeHeapPointerTagging="false"
+        android:pageSizeCompat="enabled"
+        android:allowBackup="true"
+        android:hasFragileUserData="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme">
+
+        <!-- Game Mode (Android 12+): tells platform/vendor game services we support the
+             performance profile and must not be downscaled or FPS-capped — see the config. -->
+        <meta-data
+            android:name="android.game_mode_config"
+            android:resource="@xml/game_mode_config" />
+
+        <!-- adjustResize: without it the window doesn't shrink for the soft keyboard, so a ScrollView
+             can't scroll a focused field above it (the Environment variables input in Settings). -->
+        <activity
+            android:name=".LauncherActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ats.AtsControlsEditorActivity"
+            android:screenOrientation="sensorLandscape"
+            android:theme="@style/AppTheme" />
+
+        <service
+            android:name=".InstallerService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <provider
+            android:name=".AppStorageProvider"
+            android:authorities="com.stormdroid.STORAGE_PROVIDER_AUTHORITY"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
+        <!-- Shares the bug-report log zip (from cache) as a content:// URI an email app can attach. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.stormdroid.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

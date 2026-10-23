@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">StormDroid</string>
+    <string name="launch">启动</string>
+    <string name="incomplete_game_title">游戏文件不完整</string>
+    <string name="delete_instance">删除实例</string>
+    <string name="instance_shortcut">添加到主屏幕</string>
+    <string name="instance_shortcut_unsupported">此桌面不允许应用添加快捷方式。</string>
+    <string name="more_options">更多选项</string>
+    <string name="delete_instance_confirm">删除实例“%1$s”及其全部文件？此操作无法撤销。</string>
+    <string name="log">日志</string>
+    <string name="reverse_landscape_label">画面翻转（180°）</string>
+    <string name="reverse_landscape_hint">把游戏翻转到相反的横屏方向——仍然固定，不会自由旋转。如果你的手柄或支架把手机反着夹，就打开它。</string>
+    <string name="haptic_label">按下按钮时震动</string>
+    <string name="hud_label">游戏内显示</string>
+    <string name="hud_off">关闭</string>
+    <string name="hud_fps">FPS</string>
+    <string name="hud_full">完整信息</string>
+    <string name="hud_hint">“完整信息”会在顶部显示一条状态栏：GPU 和 CPU 负载、内存、功耗、温度和 FPS 曲线。方便看出是什么拖慢了游戏。</string>
+    <string name="fps_cap_label">帧率上限</string>
+    <string name="texq_label">纹理压缩</string>
+    <string name="texq_no">无</string>
+    <string name="texq_low">低</string>
+    <string name="texq_ultra">极低</string>
+    <string name="fps_cap_30">30 FPS</string>
+    <string name="fps_cap_60">60 FPS</string>
+    <string name="fps_cap_off">不限制</string>
+    <string name="render_res_label">渲染分辨率</string>
+    <string name="render_res_fullscreen">全屏</string>
+    <string name="render_res_black_margins">黑边</string>
+    <string name="nav_export_logs">导出日志（ZIP）</string>
+    <string name="nav_updates">新版本（GitHub）</string>
+    <string name="nav_bug_report">报告问题</string>
+    <string name="launcher_empty_title">开始使用</string>
+    <string name="nav_label_donate">捐助</string>
+    <string name="bug_report_subject">STORMDROID REPORT %1$s</string>
+    <string name="bug_report_body">你好，我要报告一个新问题。\n\n描述：\n\n\n---\n%1$s</string>
+    <string name="bug_report_no_mail">此设备上没有找到邮件应用。</string>
+    <!-- Support dialog (heart icon). ko-fi link is made clickable at runtime. -->
+    <string name="donate_title">支持开发</string>
+    <string name="donate_message">喜欢 StormDroid，想支持一下？\n\n作者与维护者：ko-fi.com/udarmolota\n\n每一份支持都能让项目继续走下去。谢谢！❤</string>
+    <string name="edit_controls">编辑屏幕控件</string>
+    <string name="editor_bg_set">背景</string>
+    <string name="editor_bg_clear">无背景</string>
+    <string name="editor_grid_off">网格：关</string>
+    <string name="editor_add">添加</string>
+    <string name="editor_layout">布局</string>
+    <string name="editor_done">完成</string>
+    <string name="editor_delete">删除元素</string>
+    <string name="nav_launcher">StormDroid</string>
+    <string name="nav_settings">设置</string>
+    <string name="app_settings_theme">主题</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="nav_new_instance">添加游戏实例</string>
+
+    <string name="env_vars_hint">KEY=VALUE 形式（用空格分隔），启动时应用并覆盖默认值。用于诊断测试——除非你清楚自己在做什么，否则请留空。</string>
+
+    <string name="card_fps">帧率</string>
+    <string name="card_controls">控制</string>
+    <string name="card_advanced">高级</string>
+    <string name="env_section_header">环境变量</string>
+    <string name="pick_zip">选择 ZIP 文件</string>
+    <string name="install">安装</string>
+    <string name="installing">正在安装…</string>
+    <string name="instance_name_hint">实例名称</string>
+    <string name="selected_zip_hint">未选择文件</string>
+    <string name="error_name_required">必须填写名称</string>
+    <string name="error_name_too_long">名称太长（最多 %1$d 个字符）</string>
+    <string name="error_name_exists">已存在同名实例</string>
+    <string name="nav_manage_storage">管理存储</string>
+    <string name="clear">清除</string>
+
+    <string name="native_engine_failed">无法启动原生引擎：%1$s</string>
+    <string name="vk_compat_label">Vulkan 兼容性</string>
+    <string name="vk_compat_auto_on">自动（此 GPU 已开启）</string>
+    <string name="vk_compat_auto_off">自动（此 GPU 已关闭）</string>
+    <string name="vk_compat_on">开启</string>
+    <string name="vk_compat_off">关闭</string>
+    <string name="vk_compat_hint">如果画面在标志或菜单处卡住而游戏仍在运行，请开启。画面相同，只是 Unity 构建每一帧的方式不同。下次启动生效。</string>
+    <string name="release_notes_title">v%1$s 更新内容</string>
+    <string name="launch_starting">正在启动游戏…</string>
+    <string name="launch_preparing_title">正在准备启动</string>
+    <string name="launch_preparing_message">正在准备游戏…… 安装或更新后的首次启动可能需要一分钟。</string>
+    <string name="editor_layout_classic">经典</string>
+    <string name="controls_editor_classic_loaded">已加载经典布局</string>
+</resources>

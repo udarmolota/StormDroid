@@ -1,0 +1,25 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+app/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Local scratch / debugging artifacts (not part of the project)
+_*
+
+# Unity's binaries, prepared by tools/unity/prepare_unity.sh: never committed
+/unity/prepared/
+/unity/prepared.work/
+/unity/.cxx/
+/unity/build/

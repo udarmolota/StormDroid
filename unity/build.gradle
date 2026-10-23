@@ -1,0 +1,72 @@
+// Unity's own ARM64 Android player (2021.3.45f2) running the game's C# on our ARM64 Mono through il2mono
+// (a libil2cpp.so replacement), with vkshim between the player and the Vulkan driver.
+//
+// Unity's binaries are not in the repository: tools/unity/prepare_unity.sh extracts them from Unity's
+// Android Support package into unity/prepared/ (git-ignored).
+plugins {
+    id 'com.android.library'
+}
+
+// The prepared Unity player set: unity/prepared by default; unityPrepared (Gradle property or
+// local.properties, relative to the root project or absolute) selects another folder made the same way.
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.isFile()) localPropsFile.withInputStream { localProps.load(it) }
+def preparedDir = rootProject.file(project.findProperty('unityPrepared')
+        ?: localProps.getProperty('unityPrepared') ?: 'unity/prepared')
+if (!preparedDir.isDirectory())
+    throw new GradleException("Unity player files missing: run tools/unity/prepare_unity.sh (expected " + preparedDir + ")")
+
+android {
+    // Unity's classes look up their resources (R.id.unitySurfaceView, styles) in this namespace.
+    namespace 'com.unity3d.player'
+    compileSdk 36
+    ndkVersion "27.0.12077973"
+
+    defaultConfig {
+        minSdk 30
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                        "-DUNITY_PREPARED=" + preparedDir.absolutePath.replace('\\', '/')
+            }
+        }
+    }
+
+    // games-frame-pacing's prefab package, for Unity's Swappy wrapper (src/main/cpp/CMakeLists.txt).
+    buildFeatures {
+        prefab true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs += [new File(preparedDir, 'jniLibs')]
+            assets.srcDirs += [new File(preparedDir, 'assets')]
+        }
+    }
+
+    androidResources {
+        // The player reads its data straight from the APK; keep the serialized files uncompressed.
+        noCompress += ['.unity3d', '.ress', '.resource', '.obb', '.bundle', '.unityexp', '.assets', '.resS', '.json']
+    }
+}
+
+dependencies {
+    implementation files(new File(preparedDir, 'libs/unity-classes.jar'))
+    implementation 'androidx.games:games-frame-pacing:1.10.0'
+}

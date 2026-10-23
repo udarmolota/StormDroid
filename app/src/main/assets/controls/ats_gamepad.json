@@ -1,0 +1,324 @@
+[
+  {
+    "alpha": 128,
+    "bindings": [
+      "LEFT_JOYSTICK"
+    ],
+    "centerXRelative": 0.15,
+    "centerYRelative": 0.75,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "STICK"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "RIGHT_JOYSTICK"
+    ],
+    "centerXRelative": 0.85,
+    "centerYRelative": 0.75,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 1.4,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "STICK"
+  },
+  {
+    "alpha": 128,
+    "bindings": [],
+    "centerXRelative": 0.12,
+    "centerYRelative": 0.45,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "DPAD"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_LB"
+    ],
+    "centerXRelative": 0.25,
+    "centerYRelative": 0.75,
+    "color": -1,
+    "dragLook": true,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_RECT",
+    "text": "LB"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_RB"
+    ],
+    "centerXRelative": 0.75,
+    "centerYRelative": 0.75,
+    "color": -1,
+    "dragLook": true,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_RECT",
+    "text": "RB"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_A"
+    ],
+    "centerXRelative": 0.825,
+    "centerYRelative": 0.525,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_CIRCLE",
+    "text": "A"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_B"
+    ],
+    "centerXRelative": 0.875,
+    "centerYRelative": 0.425,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_CIRCLE",
+    "text": "B"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_X"
+    ],
+    "centerXRelative": 0.775,
+    "centerYRelative": 0.425,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_CIRCLE",
+    "text": "X"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_Y"
+    ],
+    "centerXRelative": 0.825,
+    "centerYRelative": 0.325,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_CIRCLE",
+    "text": "Y"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_BACK"
+    ],
+    "centerXRelative": 0.27,
+    "centerYRelative": 0.93,
+    "color": -1,
+    "icon": "GAMEPAD_BACK_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.75,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_RECT",
+    "text": "Back"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_START"
+    ],
+    "centerXRelative": 0.73,
+    "centerYRelative": 0.93,
+    "color": -1,
+    "icon": "GAMEPAD_START_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.75,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_RECT",
+    "text": "Start"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_LSTICK"
+    ],
+    "centerXRelative": 0.05,
+    "centerYRelative": 0.9,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.75,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_CIRCLE",
+    "text": "L3"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_BUTTON_RSTICK"
+    ],
+    "centerXRelative": 0.95,
+    "centerYRelative": 0.9,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.75,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_CIRCLE",
+    "text": "R3"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_LTRIGGER"
+    ],
+    "centerXRelative": 0.25,
+    "centerYRelative": 0.62,
+    "color": -1,
+    "dragLook": true,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_RECT",
+    "text": "LT"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "GAMEPAD_RTRIGGER"
+    ],
+    "centerXRelative": 0.75,
+    "centerYRelative": 0.62,
+    "color": -1,
+    "dragLook": true,
+    "icon": "NO_ICON",
+    "inputType": "GAMEPAD",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_RECT",
+    "text": "RT"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "UI_TOGGLE_OVERLAY"
+    ],
+    "centerXRelative": 0.955,
+    "centerYRelative": 0.0875,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_CIRCLE",
+    "text": "V"
+  },
+  {
+    "alpha": 128,
+    "bindings": [
+      "UI_TOGGLE_KEYBOARD"
+    ],
+    "centerXRelative": 0.9,
+    "centerYRelative": 0.0875,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "BUTTON_CIRCLE",
+    "text": "KB"
+  }
+]

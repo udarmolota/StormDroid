@@ -1,0 +1,116 @@
+StormDroid
+Copyright (c) 2026 udarmolota
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See the LICENSE file for the full GPL-3.0 text.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+Additional permission under GNU GPL version 3 section 7
+
+If you modify this Program, or any covered work, by linking or combining it with
+the Unity runtime (the Unity Android player libraries such as libunity.so and
+libmain.so, and the UnityEngine managed modules, published by Unity Technologies),
+containing parts covered by the terms of the Unity license, the licensor of this
+Program grants you additional permission to convey the resulting work. Corresponding
+Source for a non-source form of such a combination shall not include the source
+code for the parts of the Unity runtime used, but shall include the source code
+of the parts of this Program that are combined with it (il2mono, the Vulkan shim
+and the input bridge assembly, among others).
+
+StormDroid is an unofficial, community-developed compatibility launcher for running
+the Windows version of Against the Storm on ARM64 Android devices.
+
+Using StormDroid requires a complete copy of the game's Windows version, provided by
+the user. Against the Storm and its related names and trademarks belong to
+Eremite Games. StormDroid is not official and is not endorsed by Eremite Games.
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+StormDroid's own source code is licensed under GPL-3.0 unless a source file or this
+NOTICE states otherwise. StormDroid also bundles and/or uses third-party components under their
+respective open-source or proprietary licenses.
+
+Third-party components remain the property of their respective copyright holders
+and are not relicensed under GPL-3.0 by their inclusion in StormDroid.
+
+--- Source code ported into StormDroid ---
+
+Zomdroid               MIT License          Copyright (c) 2025 liamelui;
+                                            later changes Copyright (c) 2025-2026 udarmolota
+                       https://github.com/udarmolota/zomdroid (a fork of liamelui's Zomdroid)
+                       The on-screen controls (layout model, elements, editor and gamepad
+                       mapping) are derived from Zomdroid: the files under
+                       app/src/main/java/com/stormdroid/ats/ that say so in their first line.
+                       The MIT notice below applies to the Zomdroid-derived portions of these files:
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+--- Native (bundled .so) ---
+
+Mono (Unity fork)      MIT License          Copyright (c) .NET Foundation and Contributors;
+(libmonobdwgc-2.0.so,                       fork by Unity Technologies
+ libmono-native.so)                         github.com/Unity-Technologies/mono, commit c11bc9adba,
+                                            built for Android ARM64
+                       Includes the Boehm-Demers-Weiser garbage collector (MIT-style license),
+                       Copyright (c) 1988-1989 Hans-J. Boehm, Alan J. Demers; 1991-1995 Xerox
+                       Corporation; 1996-1999 Silicon Graphics; 1999-2001 Hewlett-Packard.
+
+libsteam_api64.so      StormDroid original work (GPL-3.0): an ARM64 stub that only exports the
+(arm64 stub)           Steamworks startup function names and answers "Steam is not running";
+                       contains no Valve code (unity/src/main/cpp/steam_stub).
+
+--- Proprietary runtime components (not in the repository) ---
+
+Unity Android player   Unity license        Copyright (c) Unity Technologies
+(libunity.so, libmain.so, unity-classes.jar, UnityEngine*.dll)
+                       Extracted by tools/unity/prepare_unity.sh from Unity's own Android Support
+                       package; see the additional permission above.
+
+--- Java / Gradle dependencies ---
+
+AndroidX libraries     Apache License 2.0   Copyright (c) The Android Open Source Project
+Material Components     Apache License 2.0   Copyright (c) Google LLC
+Apache Commons Compress Apache License 2.0   Copyright (c) The Apache Software Foundation
+Gson                   Apache License 2.0   Copyright (c) Google LLC
+XZ for Java            Public Domain (0BSD)  by Lasse Collin and contributors
+
+--------------------------------------------------------------------------------
+ICONS
+--------------------------------------------------------------------------------
+
+Donate icon (app/src/main/res/drawable/ic_donate.xml): "Donate" by Edward Boatman
+from the Noun Project, licensed under CC BY 3.0.
+https://thenounproject.com/icon/donate-285/
+
+================================================================================
+Each third-party component remains subject to its own license terms. The links
+above identify the applicable upstream projects and terms; components distributed
+in binary form remain subject to any notice and redistribution requirements of
+their respective licenses.
+
+The presence of a component in this list does not imply endorsement of StormDroid
+by its copyright holder.
+================================================================================

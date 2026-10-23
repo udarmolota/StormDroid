@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- ============================ RESOLUTION ============================ -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="2dp">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:padding="16dp">
+
+        <TextView
+            style="@style/AppTheme.CardHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/render_res_label"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/render_res_hint"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:layout_marginBottom="4dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_render_res"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+      </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ============================ VIDEO ============================ -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="2dp">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:padding="16dp">
+
+        <TextView
+            style="@style/AppTheme.CardHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/texq_label"
+            android:layout_marginBottom="6dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_texq"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <RadioButton
+                android:id="@+id/rb_texq_no"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/texq_no" />
+
+            <RadioButton
+                android:id="@+id/rb_texq_low"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/texq_low" />
+
+            <RadioButton
+                android:id="@+id/rb_texq_ultra"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/texq_ultra" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/texq_hint"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/vk_compat_label"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/sp_vk_compat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:alpha="0.7"
+            android:text="@string/vk_compat_hint" />
+      </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ============================ FRAME RATE ============================ -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="2dp">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:padding="16dp">
+
+        <TextView
+            style="@style/AppTheme.CardHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/card_fps"
+            android:layout_marginBottom="6dp" />
+
+        <!-- In-game overlay: off / the classic FPS counter / the full performance bar. -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/hud_label"
+            android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+        <RadioGroup
+            android:id="@+id/rg_hud"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <RadioButton
+                android:id="@+id/rb_hud_off"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/hud_off" />
+
+            <RadioButton
+                android:id="@+id/rb_hud_fps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/hud_fps" />
+
+            <RadioButton
+                android:id="@+id/rb_hud_full"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/hud_full" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/hud_hint"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:layout_marginBottom="12dp" />
+
+        <!-- FPS cap: even out the frame-rate swings and save battery. -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/fps_cap_label"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/fps_cap_hint"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:layout_marginBottom="4dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_fps_cap"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rb_fps_30"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/fps_cap_30" />
+
+            <RadioButton
+                android:id="@+id/rb_fps_60"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/fps_cap_60" />
+
+            <RadioButton
+                android:id="@+id/rb_fps_off"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fps_cap_off" />
+        </RadioGroup>
+      </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ============================ CONTROLS ============================ -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="2dp">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:padding="16dp">
+
+        <TextView
+            style="@style/AppTheme.CardHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/card_controls"
+            android:layout_marginBottom="6dp" />
+
+        <Switch
+            android:id="@+id/sw_haptic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="14sp"
+            android:text="@string/haptic_label" />
+
+        <Switch
+            android:id="@+id/sw_reverse_landscape"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textSize="14sp"
+            android:text="@string/reverse_landscape_label" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="12sp"
+            android:alpha="0.7"
+            android:text="@string/reverse_landscape_hint" />
+      </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ============================ ADVANCED ============================ -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="2dp">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:padding="16dp">
+
+        <!-- Collapsible: this header toggles ll_advanced_content (collapsed by default). -->
+        <TextView
+            android:id="@+id/tv_advanced_header"
+            style="@style/AppTheme.CardHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/card_advanced"
+            android:drawableEnd="@android:drawable/arrow_down_float"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <LinearLayout
+            android:id="@+id/ll_advanced_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+          <TextView
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:layout_marginTop="16dp"
+              android:text="@string/env_section_header"
+              android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+          <EditText
+              android:id="@+id/et_env_vars"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:layout_marginTop="4dp"
+              android:fontFamily="monospace"
+              android:textSize="13sp"
+              android:inputType="textNoSuggestions|textMultiLine|textVisiblePassword"
+              android:hint="@string/env_vars_hint_example" />
+
+          <TextView
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:text="@string/env_vars_hint"
+              android:textAppearance="?attr/textAppearanceBodySmall"
+              android:layout_marginTop="4dp"
+              android:layout_marginBottom="4dp" />
+        </LinearLayout>
+      </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+  </LinearLayout>
+</ScrollView>

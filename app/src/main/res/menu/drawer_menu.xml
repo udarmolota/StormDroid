@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 1) Set up an instance -->
+    <group android:id="@+id/group_game" android:checkableBehavior="none">
+        <item
+            android:id="@+id/action_install_instance"
+            android:icon="@drawable/mt_icon_add"
+            android:title="@string/nav_new_instance" />
+    </group>
+
+    <!-- 2) On-screen controls: the editor asks which instance when there are several. -->
+    <group android:id="@+id/group_controls" android:checkableBehavior="none">
+        <item
+            android:id="@+id/action_edit_controls"
+            android:icon="@drawable/mt_icon_tune"
+            android:title="@string/edit_controls" />
+    </group>
+    <!-- 3) Settings -->
+    <group android:id="@+id/group_data" android:checkableBehavior="none">
+        <item
+            android:id="@+id/action_settings"
+            android:icon="@drawable/mt_icon_settings"
+            android:title="@string/nav_settings" />
+    </group>
+
+    <!-- 4) Diagnostics -->
+    <group android:id="@+id/group_files" android:checkableBehavior="none">
+        <!-- "Manage storage" lives on each instance card's own menu (menu_game_instance.xml), where
+             it acts on that instance — a global duplicate only made this drawer longer. -->
+        <item
+            android:id="@+id/action_export_logs"
+            android:icon="@drawable/mt_icon_logfile"
+            android:title="@string/nav_export_logs" />
+        <item
+            android:id="@+id/action_bug_report"
+            android:icon="@drawable/ic_bug_report"
+            android:title="@string/nav_bug_report" />
+    </group>
+
+</menu>

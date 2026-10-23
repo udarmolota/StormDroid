@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">StormDroid</string>
+    <string name="launch">Launch</string>
+    <string name="incomplete_game_title">Incomplete game files</string>
+    <string name="incomplete_game_msg">This instance can\'t start — these game files are missing or incomplete:\n\n%1$s\n\nUse a complete copy of the game\'s Windows version and add it as a new instance.</string>
+    <string name="delete_instance">Delete instance</string>
+    <string name="instance_shortcut">Add to home screen</string>
+    <string name="instance_shortcut_long">Against the Storm — %1$s</string>
+    <string name="instance_shortcut_unsupported">This launcher does not allow apps to add shortcuts.</string>
+    <string name="more_options">More options</string>
+    <string name="delete_instance_confirm">Delete instance \"%1$s\" and all its files? This cannot be undone.</string>
+    <string name="log">Log</string>
+    <string name="reverse_landscape_label">Mirror the picture (180°)</string>
+    <string name="reverse_landscape_hint">Flips the game to the opposite landscape — still fixed, no free rotation. Turn on if your gamepad or cradle holds the phone the other way up.</string>
+    <string name="native_engine_failed">Could not start the native engine: %1$s</string>
+    <string name="haptic_label">Vibrate on button press</string>
+    <string name="hud_label">In-game display</string>
+    <string name="hud_off">Off</string>
+    <string name="hud_fps">FPS</string>
+    <string name="hud_full">Full info</string>
+    <string name="hud_hint">Full info shows a bar at the top: GPU and CPU load, memory, power draw, temperature and an FPS graph. Handy to see what slows the game down.</string>
+    <string name="fps_cap_label">Frame rate limit</string>
+    <string name="fps_cap_hint">Caps FPS to smooth out swings and save battery. Try 60 or 30 if the counter jumps around.</string>
+    <string name="texq_label">Texture compression</string>
+    <string name="texq_hint">Shrinks textures to save memory and gain FPS: No = half size, Low = a quarter, Ultra low = an eighth. The lower, the faster and the blurrier.</string>
+    <string name="texq_no">No</string>
+    <string name="texq_low">Low</string>
+    <string name="texq_ultra">Ultra low</string>
+    <string name="fps_cap_30">30 FPS</string>
+    <string name="fps_cap_60">60 FPS</string>
+    <string name="fps_cap_off">No limit</string>
+    <string name="render_res_label">Render resolution</string>
+    <string name="render_res_fullscreen">fullscreen</string>
+    <string name="render_res_black_margins">black margins</string>
+    <string name="render_res_hint">Lower = more FPS on weak GPUs. Native = sharpest. The game\'s interface keeps its size; change it in the game\'s own video options (UI size).</string>
+    <string name="nav_export_logs">Export logs (ZIP)</string>
+    <string name="nav_updates">New versions (GitHub)</string>
+    <string name="nav_bug_report">Report a bug</string>
+    <string name="launcher_empty_title">Getting started</string>
+    <string name="launcher_empty_guide">To start playing, create an instance — an installed copy of Against the Storm. Pack the game\'s Windows version into a ZIP (the folder with \"Against the Storm.exe\") and add it with the + at the top.</string>
+    <!-- "What's new" dialog, shown once per version (LauncherFragment.maybeShowReleaseNotes). English
+         only, like the release notes it is cut from. Read with getText, so <b>/<i> are kept; keep it on
+         one line, because a line break inside a string resource turns into a leading space. -->
+    <string name="release_notes_title">What\'s new in v%1$s</string>
+    <string name="release_notes_body"><b>– First StormDroid build</b>\nAgainst the Storm\'s Windows version on Unity\'s own Android player: nothing emulated, Vulkan graphics.\n\n<b>– On-screen controls</b>\nGamepad and keyboard + mouse layouts, switched in the controls editor (Layouts). A physical gamepad works as in the game\'s Steam Deck mode.</string>
+    <!-- Captions shown under each drawer-footer icon. Brand names stay untranslated. -->
+    <string name="nav_label_github" translatable="false">GitHub</string>
+    <string name="nav_label_donate">Donate</string>
+    <!-- Bug report email. Number = the tap date as ddMMyyyy, filled at runtime. -->
+    <string name="bug_report_email" translatable="false">210478@mail.ru</string>
+    <string name="bug_report_subject">STORMDROID REPORT %1$s</string>
+    <string name="bug_report_body">Hi, I have a new bug report.\n\nDescription: \n\n\n---\n%1$s</string>
+    <string name="bug_report_no_mail">No email app found on this device.</string>
+    <!-- Support dialog (heart icon). ko-fi link is made clickable at runtime. -->
+    <string name="donate_title">Support development</string>
+    <string name="donate_message">Enjoying StormDroid and want to support it?\n\nMade and maintained by: ko-fi.com/udarmolota\n\nEvery bit helps keep the work going. Thank you! ❤</string>
+    <!-- External links. url_x carries what url_reddit used to. -->
+    <string name="url_github_releases" translatable="false">https://github.com/udarmolota/stormdroid/releases</string>
+    <string name="edit_controls">Edit on-screen controls</string>
+    <string name="editor_bg_set">Background</string>
+    <string name="editor_bg_clear">No BG</string>
+    <string name="editor_grid_off">Grid: off</string>
+    <string name="editor_add">Add</string>
+    <string name="editor_layout">Layout</string>
+    <string name="editor_done">Done</string>
+    <string name="editor_delete">Delete element</string>
+    <string name="nav_launcher">StormDroid</string>
+    <string name="nav_settings">Settings</string>
+    <string name="app_settings_theme">Theme</string>
+    <string name="app_settings_note">Game settings (resolution, textures, frame rate, controls) are per-instance — open them from a game card\'s gear icon.</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="nav_new_instance">Add game instance</string>
+
+    <string name="env_vars_hint">KEY=VALUE pairs (space-separated), applied on launch and overriding the defaults. For diagnostics tests — leave empty unless you know what you\'re doing. </string>
+    <string name="env_vars_hint_example">e.g. STORMDROID_UNITY_ARGS=-force-gfx-direct</string>
+
+    <string name="card_fps">Frame rate</string>
+    <string name="card_controls">Controls</string>
+    <string name="card_advanced">Advanced</string>
+    <string name="env_section_header">Environment variables</string>
+    <string name="pick_zip">Pick ZIP file</string>
+    <string name="install">Install</string>
+    <string name="installing">Installing…</string>
+    <string name="instance_name_hint">Instance name</string>
+    <string name="selected_zip_hint">No file selected</string>
+    <string name="error_name_required">Name is required</string>
+    <string name="error_name_too_long">Name is too long (max %1$d characters)</string>
+    <string name="error_name_exists">An instance with this name already exists</string>
+    <string name="nav_manage_storage">Manage Storage</string>
+    <string name="clear">Clear</string>
+
+    <string name="vk_compat_label">Vulkan compatibility</string>
+    <string name="vk_compat_auto_on">Auto (on for this GPU)</string>
+    <string name="vk_compat_auto_off">Auto (off for this GPU)</string>
+    <string name="vk_compat_on">On</string>
+    <string name="vk_compat_off">Off</string>
+    <string name="vk_compat_hint">Turn it on if the picture freezes on the logo or in the menu while the game keeps running. The picture is the same; Unity builds each frame differently. Takes effect at the next launch.</string>
+    <!-- Against the Storm controls editor (ported from ValDroid) -->
+    <string name="control_element_icon_from_pack">From a pack…</string>
+    <string name="editor_layout_gamepad">Gamepad (default)</string>
+    <string name="control_element_binding_down">Down</string>
+    <string name="control_element_binding_left">Left</string>
+    <string name="control_element_binding_right">Right</string>
+    <string name="control_element_binding_up">Up</string>
+    <string name="control_element_bindings">Bindings</string>
+    <string name="control_element_custom_icon">Custom icon…</string>
+    <string name="control_element_custom_icon_failed">Could not load the image</string>
+    <string name="control_element_custom_icon_select_button">Select a button first</string>
+    <string name="control_element_drag_look">Drag turns the camera</string>
+    <string name="control_element_drag_look_touchpad">Like a touchpad: the camera follows the finger (moves the mouse; with a gamepad layout the game\'s hints may switch to the keyboard)</string>
+    <string name="control_element_float_zone">Zone size</string>
+    <string name="control_element_floating">Floating joystick</string>
+    <string name="control_element_icon">Icon</string>
+    <string name="control_element_icon_no_tint">Keep original colors</string>
+    <string name="control_element_input_type">Input type</string>
+    <string name="control_element_opacity">Opacity</string>
+    <string name="control_element_opacity_all">To all</string>
+    <string name="control_element_scale">Size</string>
+    <string name="control_element_sensitivity">Sensitivity</string>
+    <string name="control_element_stick_binding">Stick</string>
+    <string name="control_element_style">Style</string>
+    <string name="control_element_tap_click">Tap = left click</string>
+    <string name="control_element_text">Text</string>
+    <string name="control_element_text_empty">Empty</string>
+    <string name="control_element_toggle">Toggle</string>
+    <string name="controls_editor_add_element">Add control element</string>
+    <string name="controls_editor_gamepad_loaded">Gamepad layout loaded</string>
+    <string name="controls_editor_instructions">Tap an element to edit it, drag it to move it. Long-press an empty spot (or tap Add) to add an element. Changes are saved when you leave the editor.</string>
+    <string name="ctl_icon_none">No icon</string>
+    <string name="ctl_input_gamepad">Gamepad</string>
+    <string name="ctl_input_mnk">Keyboard &amp; mouse</string>
+    <string name="ctl_key_left">Left %1$s</string>
+    <string name="ctl_key_right">Right %1$s</string>
+    <string name="ctl_key_space">Space</string>
+    <string name="ctl_mouse_button">Mouse button %1$s</string>
+    <string name="ctl_mouse_left">Left click</string>
+    <string name="ctl_mouse_middle">Middle click</string>
+    <string name="ctl_mouse_right">Right click</string>
+    <string name="ctl_mouse_wheel_down">Wheel down</string>
+    <string name="ctl_mouse_wheel_up">Wheel up</string>
+    <string name="ctl_pad_axis">%1$s (axis)</string>
+    <string name="ctl_pad_dpad">D-pad %1$s</string>
+    <string name="ctl_pad_left_stick">Left stick</string>
+    <string name="ctl_pad_left_stick_press">Left stick press (L3)</string>
+    <string name="ctl_pad_right_stick">Right stick</string>
+    <string name="ctl_pad_right_stick_press">Right stick press (R3)</string>
+    <string name="ctl_style_console">Console</string>
+    <string name="ctl_style_filled">Filled</string>
+    <string name="ctl_style_glass">Glass</string>
+    <string name="ctl_style_outline">Outline</string>
+    <string name="ctl_type_button_circle">Button (round)</string>
+    <string name="ctl_type_button_rect">Button (rectangle)</string>
+    <string name="ctl_type_dpad">D-pad</string>
+    <string name="ctl_type_radial_menu">Radial menu</string>
+    <string name="ctl_type_scroll_bar">Scroll bar (mouse wheel)</string>
+    <string name="ctl_type_stick">Stick (gamepad)</string>
+    <string name="ctl_type_stick_mouse">Stick (mouse)</string>
+    <string name="ctl_type_stick_wasd">Stick (WASD keys)</string>
+    <string name="ctl_type_touchpad">Touchpad (mouse)</string>
+    <string name="ctl_ui_toggle_keyboard">Show/hide keyboard</string>
+    <string name="ctl_ui_toggle_overlay">Show/hide on-screen controls</string>
+    <string name="editor_grid_on">Grid: on</string>
+    <string name="percentage_format" translatable="false">%d%%</string>
+    <string name="launch_starting">Starting the game…</string>
+    <string name="launch_preparing_title">Preparing to launch</string>
+    <string name="launch_preparing_message">Getting the game ready… The first launch after an install or update can take up to a minute.</string>
+    <string name="editor_layout_classic">Classic</string>
+    <string name="controls_editor_classic_loaded">Classic layout loaded</string>
+</resources>

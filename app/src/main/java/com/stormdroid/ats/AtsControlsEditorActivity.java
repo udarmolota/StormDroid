@@ -1,0 +1,1124 @@
+// Derived from Zomdroid (MIT) — see NOTICE.
+package com.stormdroid.ats;
+
+import com.stormdroid.R;
+import android.content.pm.ActivityInfo;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.Gravity;
+import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
+import android.widget.SeekBar;
+import android.widget.Toast;
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.stormdroid.ats.controls.AbstractControlElement;
+import com.stormdroid.ats.controls.ControlElementDescription;
+import com.stormdroid.ats.controls.ControlLabels;
+import com.stormdroid.ats.controls.GLFWBinding;
+import com.stormdroid.ats.controls.InputControlsView;
+import com.stormdroid.ats.controls.ControlsStorage;
+import com.stormdroid.databinding.AtsActivityControlsEditorBinding;
+import com.stormdroid.databinding.AtsElementBindingFieldBinding;
+
+/**
+ * On-screen controls layout editor. Tap an element to open its settings card (size, opacity,
+ * sensitivity, text, toggle, icon, style, input type, bindings), drag to move it, long-press an
+ * empty spot to add one. The layout is saved to the instance's controls/controls.json when the
+ * editor is left.
+ */
+public class AtsControlsEditorActivity extends AppCompatActivity {
+    /** Which instance's layout to edit (null = the app-wide one, see ControlsStorage). */
+    public static final String EXTRA_INSTANCE_NAME = "instance_name";
+    private static final String EDITOR_PREFS = "controls_editor";
+    private AtsActivityControlsEditorBinding binding;
+    private TextWatcher controlElementTextWatcher = null;
+    private ActivityResultLauncher<String> pickIconLauncher;
+    private ActivityResultLauncher<String> pickBackgroundLauncher;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        binding = AtsActivityControlsEditorBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        // FIRST, before anything else touches inputControlsV: the layout is read for this
+        // instance on the view's first size change.
+        String instanceName = getIntent().getStringExtra(EXTRA_INSTANCE_NAME);
+        binding.inputControlsV.setInstanceName(instanceName);
+
+        pickIconLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+            if (uri != null) onIconPicked(uri);
+        });
+        pickBackgroundLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+            if (uri != null) onBackgroundPicked(uri);
+        });
+
+        // Immersive fullscreen (no status or navigation bar) so the editing area matches the
+        // game's fullscreen surface — otherwise positions would be off on devices with a visible
+        // navigation bar.
+        getWindow().setDecorFitsSystemWindows(false);
+        hideSystemBars();
+
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+
+        binding.inputControlsV.setEditMode(true);
+        binding.inputControlsV.setBackgroundColor(0x00000000);
+
+        // Reference background: a screenshot to place buttons against. Editor-only, kept in app
+        // files so it survives reopening the editor; never affects the game.
+        loadEditorBackground();
+        binding.bgSetBtn.setOnClickListener(v -> pickBackgroundLauncher.launch("image/*"));
+        binding.bgClearBtn.setOnClickListener(v -> {
+            //noinspection ResultOfMethodCallIgnored
+            backgroundFile().delete();
+            binding.controlsEditorBgIv.setImageDrawable(null);
+        });
+
+        binding.addBtn.setOnClickListener(v -> binding.inputControlsV.showAddElementDialog());
+        binding.doneBtn.setOnClickListener(v -> {
+            binding.inputControlsV.saveControlElementsToDisk();
+            finish();
+        });
+
+        // Grid snapping: remembered across editor sessions, editor-only (no effect in game).
+        final android.content.SharedPreferences editorPrefs = getSharedPreferences(EDITOR_PREFS, MODE_PRIVATE);
+        binding.gridTb.setChecked(editorPrefs.getBoolean("snap_to_grid", false));
+        binding.inputControlsV.setSnapToGrid(binding.gridTb.isChecked());
+        binding.gridTb.setOnCheckedChangeListener((btn, on) -> {
+            binding.inputControlsV.setSnapToGrid(on);
+            editorPrefs.edit().putBoolean("snap_to_grid", on).apply();
+        });
+
+        // The bundled layouts. Loading one replaces the current layout; elements of the other kind
+        // can be added on top (the game takes gamepad and keyboard input together). The Classic one
+        // comes with its icon pack on.
+        binding.layoutsBtn.setOnClickListener(v -> {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.editor_layout)
+                    .setItems(new CharSequence[]{
+                            getString(R.string.editor_layout_classic),
+                            getString(R.string.editor_layout_gamepad)
+                    }, (dialog, which) -> {
+                        if (which == 0) {
+                            binding.inputControlsV.replaceControlsFromAsset(ControlsStorage.ASSET_CLASSIC, true);
+                            binding.inputControlsV.applyDefaultIcons();
+                            Toast.makeText(this, R.string.controls_editor_classic_loaded, Toast.LENGTH_SHORT).show();
+                        } else {
+                            binding.inputControlsV.replaceControlsFromAsset(ControlsStorage.ASSET_GAMEPAD, true);
+                            Toast.makeText(this, R.string.controls_editor_gamepad_loaded, Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+        });
+
+        binding.inputControlsV.setElementSettingsController(new InputControlsView.ElementSettingsController() {
+            /** Shows (or hides) the sensitivity slider for the element; re-run when the
+             *  drag-to-look checkbox changes, since that decides whether a button has one. */
+            private void loadSensitivity(AbstractControlElement element) {
+                // Sensitivity: touchpad, mouse stick, scroll bar, radial menu, gamepad stick, and a
+                // button with drag-to-look on (its look speed; the same scale as the touchpad).
+                final boolean isLookButton = element instanceof com.stormdroid.ats.controls.ButtonControlElement
+                        && ((com.stormdroid.ats.controls.ButtonControlElement) element).isDragLook();
+                boolean hasSensitivity = (element.getType() == AbstractControlElement.Type.TOUCHPAD
+                        || element.getType() == AbstractControlElement.Type.STICK_MOUSE
+                        || element.getType() == AbstractControlElement.Type.SCROLL_BAR
+                        || element.getType() == AbstractControlElement.Type.RADIAL_MENU
+                        || element.getType() == AbstractControlElement.Type.STICK
+                        || isLookButton);
+                // A gamepad stick's gain is shown as a plain percentage (100% = 1:1, stored as 2.0,
+                // see StickControlElement), on a 25-200% slider; the others keep Zomdroid's scale.
+                final boolean isStick = element instanceof com.stormdroid.ats.controls.StickControlElement;
+                final float sensUnit = isStick ? 50f : 100f;
+                binding.elementSensitivitySb.setMin(25);
+                binding.elementSensitivitySb.setMax(isStick ? 200 : 800);
+
+                if (hasSensitivity) {
+                    final float currentSens;
+                    if (element instanceof com.stormdroid.ats.controls.TouchpadControlElement) {
+                        currentSens = ((com.stormdroid.ats.controls.TouchpadControlElement) element).getSensitivity();
+                    } else if (element instanceof com.stormdroid.ats.controls.MouseStickControlElement) {
+                        currentSens = ((com.stormdroid.ats.controls.MouseStickControlElement) element).getSensitivity();
+                    } else if (element instanceof com.stormdroid.ats.controls.ScrollBarControlElement) {
+                        currentSens = ((com.stormdroid.ats.controls.ScrollBarControlElement) element).getSensitivity();
+                    } else if (element instanceof com.stormdroid.ats.controls.RadialMenuControlElement) {
+                        currentSens = ((com.stormdroid.ats.controls.RadialMenuControlElement) element).getSensitivity();
+                    } else if (isStick) {
+                        currentSens = ((com.stormdroid.ats.controls.StickControlElement) element).getSensitivity();
+                    } else if (isLookButton) {
+                        currentSens = ((com.stormdroid.ats.controls.ButtonControlElement) element).getSensitivity();
+                    } else {
+                        currentSens = ControlElementDescription.DEFAULT_SENSITIVITY;
+                    }
+
+                    int sensProgress = Math.round(currentSens * sensUnit);
+                    binding.elementSensitivityTv.setVisibility(View.VISIBLE);
+                    binding.elementSensitivityPercentTv.setVisibility(View.VISIBLE);
+                    binding.elementSensitivityPercentTv.setText(
+                            getResources().getString(R.string.percentage_format, sensProgress));
+                    binding.elementSensitivitySb.setVisibility(View.VISIBLE);
+                    binding.elementSensitivitySb.setOnSeekBarChangeListener(null);
+                    binding.elementSensitivitySb.setProgress(sensProgress);
+                    binding.elementSensitivitySb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                        @Override
+                        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                            binding.elementSensitivityPercentTv.setText(
+                                    getResources().getString(R.string.percentage_format, progress));
+                            float s = progress / sensUnit;
+                            if (element instanceof com.stormdroid.ats.controls.TouchpadControlElement) {
+                                ((com.stormdroid.ats.controls.TouchpadControlElement) element).setSensitivity(s);
+                            } else if (element instanceof com.stormdroid.ats.controls.MouseStickControlElement) {
+                                ((com.stormdroid.ats.controls.MouseStickControlElement) element).setSensitivity(s);
+                            } else if (element instanceof com.stormdroid.ats.controls.ScrollBarControlElement) {
+                                ((com.stormdroid.ats.controls.ScrollBarControlElement) element).setSensitivity(s);
+                            } else if (element instanceof com.stormdroid.ats.controls.RadialMenuControlElement) {
+                                ((com.stormdroid.ats.controls.RadialMenuControlElement) element).setSensitivity(s);
+                            } else if (isStick) {
+                                ((com.stormdroid.ats.controls.StickControlElement) element).setSensitivity(s);
+                            } else if (isLookButton) {
+                                ((com.stormdroid.ats.controls.ButtonControlElement) element).setSensitivity(s);
+                            }
+                        }
+                        @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+                        @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+                    });
+                } else {
+                    binding.elementSensitivityTv.setVisibility(View.GONE);
+                    binding.elementSensitivityPercentTv.setVisibility(View.GONE);
+                    binding.elementSensitivitySb.setVisibility(View.GONE);
+                }
+            }
+
+            /** Floating joystick, movement sticks only: the checkbox and, while it is checked,
+             *  the capture zone size (the zone itself is drawn on the layout behind the card). */
+            private void loadFloating(AbstractControlElement element) {
+                if (!element.supportsFloating()) {
+                    binding.elementFloatingCb.setVisibility(View.GONE);
+                    showFloatZone(false);
+                    return;
+                }
+                binding.elementFloatingCb.setOnCheckedChangeListener(null);
+                binding.elementFloatingCb.setChecked(element.isFloating());
+                binding.elementFloatingCb.setOnCheckedChangeListener((v, checked) -> {
+                    element.setFloating(checked);
+                    showFloatZone(checked);
+                });
+                binding.elementFloatingCb.setVisibility(View.VISIBLE);
+
+                // Shown as a percentage of the stick's own size, like the other sliders.
+                int zoneProgress = Math.round(element.getFloatZone() * 100);
+                binding.elementFloatZoneSb.setMin(Math.round(ControlElementDescription.MIN_FLOAT_ZONE * 100));
+                binding.elementFloatZoneSb.setMax(Math.round(ControlElementDescription.MAX_FLOAT_ZONE * 100));
+                binding.elementFloatZonePercentTv.setText(
+                        getResources().getString(R.string.percentage_format, zoneProgress));
+                binding.elementFloatZoneSb.setOnSeekBarChangeListener(null);
+                binding.elementFloatZoneSb.setProgress(zoneProgress);
+                binding.elementFloatZoneSb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        binding.elementFloatZonePercentTv.setText(
+                                getResources().getString(R.string.percentage_format, progress));
+                        element.setFloatZone(progress / 100f);
+                    }
+                    @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+                    @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+                });
+                showFloatZone(element.isFloating());
+            }
+
+            /**
+             * Style picker. Buttons offer every style; sticks and the composite d-pad only the
+             * ones that change how they are drawn (getStyleChoices); other elements hide it.
+             * "To all" gives every element the picked style, or the nearest one it has, so a
+             * whole layout can be switched to CONSOLE in one tap.
+             */
+            private void loadStyle(AbstractControlElement element) {
+                ControlElementDescription.Style[] choices = element.getStyleChoices();
+                int visibility = choices != null ? View.VISIBLE : View.GONE;
+                binding.elementStyleTv.setVisibility(visibility);
+                binding.elementStyleS.setVisibility(visibility);
+                binding.elementStyleAllBtn.setVisibility(visibility);
+                if (choices == null) return;
+
+                ArrayAdapter<ControlElementDescription.Style> adapterStyle = new ControlLabels.Adapter<>(AtsControlsEditorActivity.this,
+                        R.layout.ats_spinner_item,
+                        choices,
+                        st -> ControlLabels.style(AtsControlsEditorActivity.this, st));
+                binding.elementStyleS.setAdapter(adapterStyle);
+                binding.elementStyleS.setOnItemSelectedListener(null);
+                binding.elementStyleS.setSelection(adapterStyle.getPosition(element.getStyle()));
+                binding.elementStyleS.post(() -> {
+                    binding.elementStyleS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            element.setStyle((ControlElementDescription.Style) parent.getSelectedItem());
+                            binding.inputControlsV.invalidate();
+                        }
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {}
+                    });
+                });
+
+                binding.elementStyleAllBtn.setOnClickListener(v -> {
+                    ControlElementDescription.Style picked = element.getStyle();
+                    for (AbstractControlElement e : binding.inputControlsV.getControlElements()) {
+                        // setStyle narrows a style an element does not have (FILLED on a stick
+                        // draws as OUTLINE), so every element can be handed the pick as is.
+                        if (e.getStyleChoices() != null) e.setStyle(picked);
+                    }
+                    binding.inputControlsV.invalidate();
+                });
+            }
+
+            private void showFloatZone(boolean show) {
+                int visibility = show ? View.VISIBLE : View.GONE;
+                binding.elementFloatZoneTv.setVisibility(visibility);
+                binding.elementFloatZonePercentTv.setVisibility(visibility);
+                binding.elementFloatZoneSb.setVisibility(visibility);
+            }
+
+            private void loadElement(AbstractControlElement element) {
+
+                int scaleProgressValue = Math.round(element.getScale() * 100);
+                binding.elementScalePercentTv.setText(getResources().getString(R.string.percentage_format,
+                        scaleProgressValue));
+                binding.elementScaleSb.setOnSeekBarChangeListener(null);
+                binding.elementScaleSb.setProgress(scaleProgressValue);
+                binding.elementScaleSb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        binding.elementScalePercentTv.setText(getResources().getString(R.string.percentage_format, progress));
+                        element.setScale((float) progress / 100);
+                    }
+                    @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+                    @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+                });
+
+                int opacityProgressValue = Math.round((float) element.getAlpha() / 255 * 100);
+                binding.elementOpacityPercentTv.setText(getResources().getString(R.string.percentage_format,
+                        opacityProgressValue));
+                binding.elementOpacitySb.setOnSeekBarChangeListener(null);
+                binding.elementOpacitySb.setProgress(opacityProgressValue);
+                binding.elementOpacitySb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        binding.elementOpacityPercentTv.setText(getResources().getString(R.string.percentage_format, progress));
+                        element.setAlpha(Math.round((float) progress / 100 * 255));
+                    }
+                    @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+                    @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+                });
+
+                binding.elementOpacityAllBtn.setOnClickListener(v -> {
+                    int alpha = Math.round((float) binding.elementOpacitySb.getProgress() / 100 * 255);
+                    for (AbstractControlElement e : binding.inputControlsV.getControlElements()) {
+                        e.setAlpha(alpha);
+                    }
+                    binding.inputControlsV.invalidate();
+                });
+
+                // Drag to look, buttons only: while the button is held, moving the same finger turns
+                // the camera. When on, the sensitivity slider below sets its speed.
+                if (element instanceof com.stormdroid.ats.controls.ButtonControlElement) {
+                    com.stormdroid.ats.controls.ButtonControlElement button =
+                            (com.stormdroid.ats.controls.ButtonControlElement) element;
+                    binding.elementDragLookCb.setOnCheckedChangeListener(null);
+                    binding.elementDragLookCb.setChecked(button.isDragLook());
+                    binding.elementDragLookCb.setOnCheckedChangeListener((v, checked) -> {
+                        button.setDragLook(checked);
+                        binding.elementDragLookTouchpadCb.setVisibility(checked ? View.VISIBLE : View.GONE);
+                        loadSensitivity(element);
+                    });
+                    binding.elementDragLookCb.setVisibility(View.VISIBLE);
+                    // The drag's style: a stick (keeps turning while the finger is off centre) or a
+                    // touchpad (turns by the finger's travel, always as mouse movement).
+                    binding.elementDragLookTouchpadCb.setOnCheckedChangeListener(null);
+                    binding.elementDragLookTouchpadCb.setChecked(button.isDragLookTouchpad());
+                    binding.elementDragLookTouchpadCb.setOnCheckedChangeListener(
+                            (v, checked) -> button.setDragLookTouchpad(checked));
+                    binding.elementDragLookTouchpadCb.setVisibility(button.isDragLook() ? View.VISIBLE : View.GONE);
+                } else {
+                    binding.elementDragLookCb.setVisibility(View.GONE);
+                    binding.elementDragLookTouchpadCb.setVisibility(View.GONE);
+                }
+
+                loadSensitivity(element);
+                loadFloating(element);
+                loadStyle(element);
+
+                // Tap-to-click, touchpad only. Server admins asked to be able to turn the tap off:
+                // while dragging the cursor an accidental tap clicks whatever is underneath, which
+                // on an admin account fires real admin actions. Unchecked = the pad only moves the
+                // cursor; clicking is done with the on-screen mouse buttons.
+                if (element.getType() == AbstractControlElement.Type.TOUCHPAD) {
+                    com.stormdroid.ats.controls.TouchpadControlElement touchpad =
+                            (com.stormdroid.ats.controls.TouchpadControlElement) element;
+                    binding.elementTapClickCb.setOnCheckedChangeListener(null);
+                    binding.elementTapClickCb.setChecked(!touchpad.isTapDisabled());
+                    binding.elementTapClickCb.setOnCheckedChangeListener(
+                            (v, checked) -> touchpad.setTapDisabled(!checked));
+                    binding.elementTapClickCb.setVisibility(View.VISIBLE);
+                } else {
+                    binding.elementTapClickCb.setVisibility(View.GONE);
+                }
+
+                // apply UI for current type
+                applyInputType(element, element.getInputType());
+
+                // STICK_WASD / STICK_MOUSE: always MNK, the input type cannot be changed
+                boolean fixedMnkStick = (element.getType() == AbstractControlElement.Type.STICK_WASD
+                        || element.getType() == AbstractControlElement.Type.STICK_MOUSE);
+
+                if (fixedMnkStick) {
+                    element.setInputType(AbstractControlElement.InputType.MNK);
+                    applyInputType(element, AbstractControlElement.InputType.MNK);
+                    binding.elementInputTypeS.setVisibility(View.GONE);
+                } else {
+                    ArrayAdapter<AbstractControlElement.InputType> inputTypeAdapter =
+                            new ControlLabels.Adapter<>(AtsControlsEditorActivity.this, R.layout.ats_spinner_item,
+                                    AbstractControlElement.InputType.values(),
+                                    t -> ControlLabels.inputType(AtsControlsEditorActivity.this, t));
+
+                    binding.elementInputTypeS.setVisibility(View.GONE);
+                    binding.elementInputTypeS.setAdapter(inputTypeAdapter);
+                    binding.elementInputTypeS.setOnItemSelectedListener(null);
+                    binding.elementInputTypeS.setSelection(inputTypeAdapter.getPosition(element.getInputType()));
+                    binding.elementInputTypeS.post(() -> {
+                        binding.elementInputTypeS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                AbstractControlElement.InputType inputType = (AbstractControlElement.InputType) parent.getSelectedItem();
+                                element.setInputType(inputType);
+                                applyInputType(element, inputType);
+                            }
+                            @Override
+                            public void onNothingSelected(AdapterView<?> parent) { }
+                        });
+                    });
+                    binding.elementInputTypeS.setVisibility(View.VISIBLE);
+                }
+
+                switch (element.getType()) {
+                    case BUTTON_CIRCLE:
+                    case BUTTON_RECT: {
+                        binding.elementToggleTextRowLl.setVisibility(View.VISIBLE);
+                        binding.elementTextTv.setVisibility(View.VISIBLE);
+                        binding.elementTogglingTv.setVisibility(View.VISIBLE);
+                        binding.elementToggleTextFieldsLl.setVisibility(View.VISIBLE);
+                        binding.elementTogglingCb.setVisibility(View.VISIBLE);
+                        binding.elementTextEt.setVisibility(View.VISIBLE);
+                        binding.elementTextEt.removeTextChangedListener(controlElementTextWatcher);
+                        controlElementTextWatcher = new TextWatcher() {
+                            @Override
+                            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                            @Override
+                            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                element.setText(s.toString());
+                            }
+                            @Override
+                            public void afterTextChanged(Editable s) {}
+                        };
+                        binding.elementTextEt.setText(element.getText());
+                        binding.elementTextEt.addTextChangedListener(controlElementTextWatcher);
+
+                        // The built-in Back/Start icon picker only makes sense for buttons bound
+                        // to those gamepad buttons; hide it otherwise (use Custom icon instead).
+                        boolean showBuiltinIcon = hasStartSelectBinding(element);
+                        binding.elementIconTv.setVisibility(showBuiltinIcon ? View.VISIBLE : View.GONE);
+                        binding.elementIconS.setVisibility(showBuiltinIcon ? View.VISIBLE : View.GONE);
+
+                        ArrayAdapter<ControlElementDescription.Icon> adapterIcon = new ControlLabels.Adapter<>(AtsControlsEditorActivity.this,
+                                R.layout.ats_spinner_item,
+                                ControlElementDescription.Icon.values(),
+                                i -> ControlLabels.icon(AtsControlsEditorActivity.this, i));
+                        binding.elementIconS.setAdapter(adapterIcon);
+                        binding.elementIconS.setOnItemSelectedListener(null);
+                        binding.elementIconS.setSelection(adapterIcon.getPosition(element.getIcon()));
+                        binding.elementIconS.post(() -> {
+                            binding.elementIconS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                    element.setIcon((ControlElementDescription.Icon) parent.getSelectedItem());
+                                }
+                                @Override
+                                public void onNothingSelected(AdapterView<?> parent) {}
+                            });
+                        });
+
+                        // Style: see loadStyle (shared with the sticks and the d-pad).
+
+                        // Custom image icon (load your own picture)
+                        binding.elementCustomIconB.setVisibility(View.VISIBLE);
+                        binding.elementIconNoTintCb.setVisibility(View.VISIBLE);
+                        binding.elementIconNoTintCb.setOnCheckedChangeListener(null);
+                        if (element instanceof com.stormdroid.ats.controls.ButtonControlElement) {
+                            binding.elementIconNoTintCb.setChecked(
+                                    ((com.stormdroid.ats.controls.ButtonControlElement) element).isNoTint());
+                        }
+                        binding.elementCustomIconB.setOnClickListener(v -> pickIconLauncher.launch("image/*"));
+                        binding.elementPackIconB.setVisibility(View.VISIBLE);
+                        binding.elementPackIconB.setOnClickListener(v -> showPackIconPicker());
+                        binding.elementIconNoTintCb.setOnCheckedChangeListener((b, isChecked) -> {
+                            if (element instanceof com.stormdroid.ats.controls.ButtonControlElement) {
+                                ((com.stormdroid.ats.controls.ButtonControlElement) element).setNoTint(isChecked);
+                            }
+                        });
+
+                        binding.elementBindingsAddIb.setOnClickListener(v -> {
+                            GLFWBinding newBinding = GLFWBinding.valuesForType(element.getInputType())[0];
+                            element.addBinding(newBinding);
+                            addElementBindingField(element, element.getInputType(), newBinding,
+                                    element.getBindings().length - 1);
+                        });
+                        break;
+                    }
+                    case RADIAL_MENU: {
+                        // Center label (re-uses the button text field, but without the toggle
+                        // checkbox); 4 sector bindings are shown via the directional UI in applyInputType().
+                        binding.elementToggleTextRowLl.setVisibility(View.VISIBLE);
+                        binding.elementTextTv.setVisibility(View.VISIBLE);
+                        binding.elementTogglingTv.setVisibility(View.GONE);
+                        binding.elementToggleTextFieldsLl.setVisibility(View.VISIBLE);
+                        binding.elementTogglingCb.setVisibility(View.GONE);
+                        binding.elementIconTv.setVisibility(View.GONE);
+                        binding.elementIconS.setVisibility(View.GONE);
+
+                        // Custom center image (same as round buttons).
+                        binding.elementCustomIconB.setVisibility(View.VISIBLE);
+                        binding.elementIconNoTintCb.setVisibility(View.VISIBLE);
+                        binding.elementIconNoTintCb.setOnCheckedChangeListener(null);
+                        if (element instanceof com.stormdroid.ats.controls.RadialMenuControlElement) {
+                            binding.elementIconNoTintCb.setChecked(
+                                    ((com.stormdroid.ats.controls.RadialMenuControlElement) element).isNoTint());
+                        }
+                        binding.elementCustomIconB.setOnClickListener(v -> pickIconLauncher.launch("image/*"));
+                        binding.elementPackIconB.setVisibility(View.VISIBLE);
+                        binding.elementPackIconB.setOnClickListener(v -> showPackIconPicker());
+                        binding.elementIconNoTintCb.setOnCheckedChangeListener((b, isChecked) -> {
+                            if (element instanceof com.stormdroid.ats.controls.RadialMenuControlElement) {
+                                ((com.stormdroid.ats.controls.RadialMenuControlElement) element).setNoTint(isChecked);
+                            }
+                        });
+
+                        binding.elementTextEt.setVisibility(View.VISIBLE);
+                        binding.elementTextEt.removeTextChangedListener(controlElementTextWatcher);
+                        controlElementTextWatcher = new TextWatcher() {
+                            @Override
+                            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                            @Override
+                            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                element.setText(s.toString());
+                            }
+                            @Override
+                            public void afterTextChanged(Editable s) {}
+                        };
+                        binding.elementTextEt.setText(element.getText());
+                        binding.elementTextEt.addTextChangedListener(controlElementTextWatcher);
+                        break;
+                    }
+                    case DPAD:
+                    case DPAD_UP:
+                    case DPAD_RIGHT:
+                    case DPAD_DOWN:
+                    case DPAD_LEFT: {
+                        binding.elementToggleTextRowLl.setVisibility(View.GONE);
+                        binding.elementToggleTextFieldsLl.setVisibility(View.GONE);
+                        binding.elementTogglingCb.setVisibility(View.GONE);
+                        binding.elementTextEt.setVisibility(View.GONE);
+                        binding.elementIconTv.setVisibility(View.GONE);
+                        binding.elementIconS.setVisibility(View.GONE);
+
+                        // Custom image: replaces the drawn cross (composite DPAD) or the arrow
+                        // (split DPAD_*, which are ButtonControlElements and already supported it).
+                        binding.elementCustomIconB.setVisibility(View.VISIBLE);
+                        binding.elementIconNoTintCb.setVisibility(View.VISIBLE);
+                        binding.elementIconNoTintCb.setOnCheckedChangeListener(null);
+                        if (element instanceof com.stormdroid.ats.controls.DpadControlElement) {
+                            binding.elementIconNoTintCb.setChecked(
+                                    ((com.stormdroid.ats.controls.DpadControlElement) element).isNoTint());
+                        } else if (element instanceof com.stormdroid.ats.controls.ButtonControlElement) {
+                            binding.elementIconNoTintCb.setChecked(
+                                    ((com.stormdroid.ats.controls.ButtonControlElement) element).isNoTint());
+                        }
+                        binding.elementCustomIconB.setOnClickListener(v -> pickIconLauncher.launch("image/*"));
+                        binding.elementPackIconB.setVisibility(View.VISIBLE);
+                        binding.elementPackIconB.setOnClickListener(v -> showPackIconPicker());
+                        binding.elementIconNoTintCb.setOnCheckedChangeListener((b, isChecked) -> {
+                            if (element instanceof com.stormdroid.ats.controls.DpadControlElement) {
+                                ((com.stormdroid.ats.controls.DpadControlElement) element).setNoTint(isChecked);
+                            } else if (element instanceof com.stormdroid.ats.controls.ButtonControlElement) {
+                                ((com.stormdroid.ats.controls.ButtonControlElement) element).setNoTint(isChecked);
+                            }
+                        });
+                        break;
+                    }
+                    case STICK:
+                    case STICK_WASD:
+                    case STICK_MOUSE:
+                    case TOUCHPAD:
+                    default: {
+                        binding.elementToggleTextRowLl.setVisibility(View.GONE);
+                        binding.elementToggleTextFieldsLl.setVisibility(View.GONE);
+                        binding.elementTogglingCb.setVisibility(View.GONE);
+                        binding.elementTextEt.setVisibility(View.GONE);
+                        binding.elementIconTv.setVisibility(View.GONE);
+                        binding.elementIconS.setVisibility(View.GONE);
+                        binding.elementCustomIconB.setVisibility(View.GONE);
+                        binding.elementPackIconB.setVisibility(View.GONE);
+                        binding.elementIconNoTintCb.setVisibility(View.GONE);
+                        break;
+                    }
+                }
+            }
+
+            @Override
+            public void open() {
+                AbstractControlElement element = binding.inputControlsV.getSelectedElement();
+                if (element == null) return;
+
+                loadElement(element);
+
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) binding.controlElementSettingsCv.getLayoutParams();
+                params.gravity = (this.fromLeft ? Gravity.START : Gravity.END) | Gravity.CENTER_VERTICAL;
+                params.width = (int) (binding.getRoot().getWidth() * 0.4f);
+                binding.controlElementSettingsCv.setLayoutParams(params);
+
+                float startX = this.fromLeft ? -binding.controlElementSettingsCv.getWidth() : binding.controlElementSettingsCv.getWidth();
+                binding.controlElementSettingsCv.setTranslationX(startX);
+
+                binding.controlElementSettingsCv.animate()
+                        .withStartAction(() -> binding.controlElementSettingsCv.setVisibility(View.VISIBLE))
+                        .translationX(0)
+                        .setDuration(300)
+                        .setInterpolator(new DecelerateInterpolator())
+                        .start();
+            }
+
+            @Override
+            public void close() {
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) binding.controlElementSettingsCv.getLayoutParams();
+                boolean exitLeft = (params.gravity & Gravity.START) == Gravity.START;
+                float endX = exitLeft ? -binding.controlElementSettingsCv.getWidth() : binding.controlElementSettingsCv.getWidth();
+
+                binding.controlElementSettingsCv.animate()
+                        .withEndAction(() -> binding.controlElementSettingsCv.setVisibility(View.INVISIBLE))
+                        .translationX(endX)
+                        .setDuration(300)
+                        .setInterpolator(new AccelerateInterpolator())
+                        .start();
+            }
+
+            @Override
+            protected void hide() {
+                binding.controlElementSettingsCv.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        binding.controlElementSettingsCv.setVisibility(View.INVISIBLE);
+
+        binding.elementTextEt.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                v.clearFocus();
+            }
+            return false;
+        });
+
+        binding.elementDeleteB.setOnClickListener(v -> binding.inputControlsV.deleteSelectedElement());
+
+        // How-to, shown on the first visit only: every later opening knows it already.
+        if (!editorPrefs.getBoolean("instructions_shown", false)) {
+            editorPrefs.edit().putBoolean("instructions_shown", true).apply();
+            new MaterialAlertDialogBuilder(this)
+                    .setMessage(R.string.controls_editor_instructions)
+                    .setCancelable(true)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .create()
+                    .show();
+        }
+    }
+
+    private void hideSystemBars() {
+        final WindowInsetsController controller = getWindow().getInsetsController();
+        if (controller != null) {
+            controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+            controller.setSystemBarsBehavior(
+                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) hideSystemBars();   // dialogs and the image picker bring the bars back
+    }
+
+    /** One per device: a design aid, not per-instance state. */
+    private File backgroundFile() {
+        return new File(getFilesDir(), "editor_bg.png");
+    }
+
+    private void loadEditorBackground() {
+        File f = backgroundFile();
+        Bitmap bm = f.isFile() ? BitmapFactory.decodeFile(f.getAbsolutePath()) : null;
+        if (bm != null) binding.controlsEditorBgIv.setImageBitmap(bm);
+        else binding.controlsEditorBgIv.setImageDrawable(null);
+    }
+
+    private void onBackgroundPicked(Uri uri) {
+        try (InputStream in = getContentResolver().openInputStream(uri);
+             FileOutputStream out = new FileOutputStream(backgroundFile())) {
+            if (in == null) return;
+            byte[] buf = new byte[1 << 16];
+            int n;
+            while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.control_element_custom_icon_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        loadEditorBackground();
+    }
+
+    private void applyInputType(@NonNull AbstractControlElement element,
+                                @NonNull AbstractControlElement.InputType inputType) {
+        // RADIAL_MENU has 4 programmable sector bindings (Left/Up/Right/Down) for both
+        // MNK and GAMEPAD — re-use the directional-bindings UI.
+        if (element.getType() == AbstractControlElement.Type.RADIAL_MENU) {
+            applyRadialMenuBindings(element, inputType);
+            return;
+        }
+        switch (inputType) {
+            case MNK: {
+                if (element.getType() == AbstractControlElement.Type.BUTTON_CIRCLE
+                        || element.getType() == AbstractControlElement.Type.BUTTON_RECT) {
+                    binding.elementBindingsTv.setVisibility(View.VISIBLE);
+                    binding.elementBindingsAddIb.setVisibility(View.VISIBLE);
+                    binding.elementTogglingCb.setVisibility(View.VISIBLE);
+
+                    binding.elementTogglingCb.setOnCheckedChangeListener(null);
+                    binding.elementTogglingCb.setChecked(element.getToggle());
+                    binding.elementTogglingCb.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                        element.setToggle(isChecked);
+                    });
+
+                    binding.elementBindingsContainerLl.removeAllViews();
+                    GLFWBinding[] bindings = element.getBindings();
+                    for (int i = 0; i < bindings.length; i++) {
+                        addElementBindingField(element, element.getInputType(), bindings[i], i);
+                    }
+
+                    binding.elementDirectionalBindingsCl.setVisibility(View.GONE);
+                    binding.elementStickBindingTv.setVisibility(View.GONE);
+                    binding.elementStickBindingS.setVisibility(View.GONE);
+
+                } else if (element.getType() == AbstractControlElement.Type.DPAD
+                        || element.getType() == AbstractControlElement.Type.STICK) {
+                    binding.elementBindingsTv.setVisibility(View.GONE);
+                    binding.elementBindingsAddIb.setVisibility(View.GONE);
+                    binding.elementBindingsContainerLl.removeAllViews();
+                    binding.elementTogglingCb.setVisibility(View.GONE);
+
+                    GLFWBinding bindingLeft = element.getBindingLeft();
+                    ArrayAdapter<GLFWBinding> adapterLeft = bindingAdapter(GLFWBinding.valuesForType(AbstractControlElement.InputType.MNK));
+                    binding.elementBindingLeftS.setAdapter(adapterLeft);
+                    binding.elementBindingLeftS.setOnItemSelectedListener(null);
+                    binding.elementBindingLeftS.setSelection(adapterLeft.getPosition(bindingLeft));
+                    binding.elementBindingLeftS.post(() -> {
+                        binding.elementBindingLeftS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                element.setBindingLeft((GLFWBinding) parent.getSelectedItem());
+                            }
+                            @Override
+                            public void onNothingSelected(AdapterView<?> parent) {}
+                        });
+                    });
+
+                    GLFWBinding bindingUp = element.getBindingUp();
+                    ArrayAdapter<GLFWBinding> adapterUp = bindingAdapter(GLFWBinding.valuesForType(AbstractControlElement.InputType.MNK));
+                    binding.elementBindingUpS.setAdapter(adapterUp);
+                    binding.elementBindingUpS.setOnItemSelectedListener(null);
+                    binding.elementBindingUpS.setSelection(adapterUp.getPosition(bindingUp), false);
+                    binding.elementBindingUpS.post(() -> {
+                        binding.elementBindingUpS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                element.setBindingUp((GLFWBinding) parent.getSelectedItem());
+                            }
+                            @Override
+                            public void onNothingSelected(AdapterView<?> parent) {}
+                        });
+                    });
+
+                    GLFWBinding bindingRight = element.getBindingRight();
+                    ArrayAdapter<GLFWBinding> adapterRight = bindingAdapter(GLFWBinding.valuesForType(AbstractControlElement.InputType.MNK));
+                    binding.elementBindingRightS.setAdapter(adapterRight);
+                    binding.elementBindingRightS.setOnItemSelectedListener(null);
+                    binding.elementBindingRightS.setSelection(adapterRight.getPosition(bindingRight));
+                    binding.elementBindingRightS.post(() -> {
+                        binding.elementBindingRightS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                element.setBindingRight((GLFWBinding) parent.getSelectedItem());
+                            }
+                            @Override
+                            public void onNothingSelected(AdapterView<?> parent) {}
+                        });
+                    });
+
+                    GLFWBinding bindingDown = element.getBindingDown();
+                    ArrayAdapter<GLFWBinding> adapterDown = bindingAdapter(GLFWBinding.valuesForType(AbstractControlElement.InputType.MNK));
+                    binding.elementBindingDownS.setAdapter(adapterDown);
+                    binding.elementBindingDownS.setOnItemSelectedListener(null);
+                    binding.elementBindingDownS.setSelection(adapterDown.getPosition(bindingDown));
+                    binding.elementBindingDownS.post(() -> {
+                        binding.elementBindingDownS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                element.setBindingDown((GLFWBinding) parent.getSelectedItem());
+                            }
+                            @Override
+                            public void onNothingSelected(AdapterView<?> parent) {}
+                        });
+                    });
+
+                    binding.elementDirectionalBindingsCl.setVisibility(View.VISIBLE);
+                    binding.elementStickBindingTv.setVisibility(View.GONE);
+                    binding.elementStickBindingS.setVisibility(View.GONE);
+
+                } else {
+                    // No bindings to edit: STICK_WASD / STICK_MOUSE (fixed keys), TOUCHPAD (a tap is
+                    // always a left click), SCROLL_BAR. Clear the panel, or the previous element's
+                    // binding rows stay on screen and still edit THAT element.
+                    binding.elementBindingsTv.setVisibility(View.GONE);
+                    binding.elementBindingsAddIb.setVisibility(View.GONE);
+                    binding.elementBindingsContainerLl.removeAllViews();
+                    binding.elementTogglingCb.setVisibility(View.GONE);
+                    binding.elementDirectionalBindingsCl.setVisibility(View.GONE);
+                    binding.elementStickBindingTv.setVisibility(View.GONE);
+                    binding.elementStickBindingS.setVisibility(View.GONE);
+                }
+                break;
+            }
+            case GAMEPAD: {
+                switch (element.getType()) {
+                    case BUTTON_CIRCLE:
+                    case BUTTON_RECT: {
+                        binding.elementBindingsTv.setVisibility(View.VISIBLE);
+                        binding.elementBindingsAddIb.setVisibility(View.VISIBLE);
+                        binding.elementTogglingCb.setVisibility(View.VISIBLE);
+
+                        binding.elementTogglingCb.setOnCheckedChangeListener(null);
+                        binding.elementTogglingCb.setChecked(element.getToggle());
+                        binding.elementTogglingCb.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                            element.setToggle(isChecked);
+                        });
+
+                        binding.elementBindingsContainerLl.removeAllViews();
+                        GLFWBinding[] bindings = element.getBindings();
+                        for (int i = 0; i < bindings.length; i++) {
+                            addElementBindingField(element, element.getInputType(), bindings[i], i);
+                        }
+
+                        binding.elementDirectionalBindingsCl.setVisibility(View.GONE);
+                        binding.elementStickBindingTv.setVisibility(View.GONE);
+                        binding.elementStickBindingS.setVisibility(View.GONE);
+                        break;
+                    }
+                    case DPAD: {
+                        binding.elementBindingsTv.setVisibility(View.GONE);
+                        binding.elementBindingsAddIb.setVisibility(View.GONE);
+                        binding.elementBindingsContainerLl.removeAllViews();
+                        binding.elementTogglingCb.setVisibility(View.GONE);
+                        binding.elementDirectionalBindingsCl.setVisibility(View.GONE);
+                        binding.elementStickBindingTv.setVisibility(View.GONE);
+                        binding.elementStickBindingS.setVisibility(View.GONE);
+                        break;
+                    }
+                    case STICK: {
+                        binding.elementBindingsTv.setVisibility(View.GONE);
+                        binding.elementBindingsAddIb.setVisibility(View.GONE);
+                        binding.elementBindingsContainerLl.removeAllViews();
+                        binding.elementTogglingCb.setVisibility(View.GONE);
+                        binding.elementDirectionalBindingsCl.setVisibility(View.GONE);
+
+                        binding.elementStickBindingTv.setVisibility(View.VISIBLE);
+
+                        ArrayAdapter<GLFWBinding> adapterStick = bindingAdapter(new GLFWBinding[]{GLFWBinding.LEFT_JOYSTICK, GLFWBinding.RIGHT_JOYSTICK});
+                        binding.elementStickBindingS.setAdapter(adapterStick);
+                        binding.elementStickBindingS.setOnItemSelectedListener(null);
+                        binding.elementStickBindingS.setSelection(adapterStick.getPosition(element.getBindingStick()));
+                        binding.elementStickBindingS.post(() -> {
+                            binding.elementStickBindingS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                    element.setBindingStick((GLFWBinding) parent.getSelectedItem());
+                                }
+                                @Override
+                                public void onNothingSelected(AdapterView<?> parent) {}
+                            });
+                        });
+                        binding.elementStickBindingS.setVisibility(View.VISIBLE);
+                        break;
+                    }
+                    case DPAD_UP:
+                    case DPAD_RIGHT:
+                    case DPAD_DOWN:
+                    case DPAD_LEFT:
+                    default: {
+                        binding.elementBindingsTv.setVisibility(View.GONE);
+                        binding.elementBindingsAddIb.setVisibility(View.GONE);
+                        binding.elementBindingsContainerLl.removeAllViews();
+                        binding.elementTogglingCb.setVisibility(View.GONE);
+                        binding.elementDirectionalBindingsCl.setVisibility(View.GONE);
+                        binding.elementStickBindingTv.setVisibility(View.GONE);
+                        binding.elementStickBindingS.setVisibility(View.GONE);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    private void applyRadialMenuBindings(@NonNull AbstractControlElement element,
+                                         @NonNull AbstractControlElement.InputType inputType) {
+        binding.elementBindingsTv.setVisibility(View.GONE);
+        binding.elementBindingsAddIb.setVisibility(View.GONE);
+        binding.elementBindingsContainerLl.removeAllViews();
+        binding.elementTogglingCb.setVisibility(View.GONE);
+        binding.elementStickBindingTv.setVisibility(View.GONE);
+        binding.elementStickBindingS.setVisibility(View.GONE);
+
+        final com.stormdroid.ats.controls.RadialMenuControlElement radial =
+                (element instanceof com.stormdroid.ats.controls.RadialMenuControlElement)
+                        ? (com.stormdroid.ats.controls.RadialMenuControlElement) element : null;
+
+        GLFWBinding[] options = GLFWBinding.valuesForType(inputType);
+
+        // sector 0 = Left, 1 = Up, 2 = Right, 3 = Down
+        setupRadialSectorSpinner(binding.elementBindingLeftS, options, element.getBindingLeft(),
+                b -> { element.setBindingLeft(b); if (radial != null) radial.setSectorLabel(0, shortBindingLabel(b)); });
+        setupRadialSectorSpinner(binding.elementBindingUpS, options, element.getBindingUp(),
+                b -> { element.setBindingUp(b); if (radial != null) radial.setSectorLabel(1, shortBindingLabel(b)); });
+        setupRadialSectorSpinner(binding.elementBindingRightS, options, element.getBindingRight(),
+                b -> { element.setBindingRight(b); if (radial != null) radial.setSectorLabel(2, shortBindingLabel(b)); });
+        setupRadialSectorSpinner(binding.elementBindingDownS, options, element.getBindingDown(),
+                b -> { element.setBindingDown(b); if (radial != null) radial.setSectorLabel(3, shortBindingLabel(b)); });
+
+        binding.elementDirectionalBindingsCl.setVisibility(View.VISIBLE);
+    }
+
+    private void setupRadialSectorSpinner(android.widget.Spinner spinner, GLFWBinding[] options,
+                                          GLFWBinding current,
+                                          java.util.function.Consumer<GLFWBinding> onPick) {
+        ArrayAdapter<GLFWBinding> adapter = bindingAdapter(options);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(null);
+        int pos = adapter.getPosition(current);
+        spinner.setSelection(pos >= 0 ? pos : 0, false);
+        spinner.post(() -> spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                onPick.accept((GLFWBinding) parent.getSelectedItem());
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        }));
+    }
+
+    private ArrayAdapter<GLFWBinding> bindingAdapter(GLFWBinding[] options) {
+        return new ControlLabels.Adapter<>(this, R.layout.ats_spinner_item, options,
+                b -> ControlLabels.binding(this, b));
+    }
+
+    /** Short human label from a binding name, e.g. KEY_A→A, GAMEPAD_BUTTON_X→X, MOUSE_WHEEL_UP→UP. */
+    private static String shortBindingLabel(GLFWBinding b) {
+        if (b == null) return "";
+        String n = b.name();
+        int us = n.lastIndexOf('_');
+        return (us >= 0 && us < n.length() - 1) ? n.substring(us + 1) : n;
+    }
+
+    private void addElementBindingField(@NonNull AbstractControlElement element,
+                                        @NonNull AbstractControlElement.InputType inputType,
+                                        @NonNull GLFWBinding binding, int bindingIndex) {
+        AtsElementBindingFieldBinding fieldBinding = AtsElementBindingFieldBinding.inflate(getLayoutInflater());
+        // The row's binding index is looked up when it is used, not captured when the row is
+        // built: rows map 1:1, in order, to the element's bindings, and deleting one shifts the
+        // rest. Zomdroid captured the index, so after one deletion the next change or delete hit
+        // the wrong binding (or ran past the end of the list).
+        final View row = fieldBinding.getRoot();
+
+        ArrayAdapter<GLFWBinding> adapter = bindingAdapter(GLFWBinding.valuesForType(inputType));
+        fieldBinding.elementBindingS.setAdapter(adapter);
+        fieldBinding.elementBindingS.setSelection(adapter.getPosition(binding));
+        fieldBinding.elementBindingS.post(() -> {
+            fieldBinding.elementBindingS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    int i = AtsControlsEditorActivity.this.binding.elementBindingsContainerLl.indexOfChild(row);
+                    if (i >= 0 && i < element.getBindings().length)
+                        element.setBinding(i, (GLFWBinding) parent.getSelectedItem());
+                }
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
+            });
+        });
+
+        fieldBinding.elementBindingDeleteIb.setOnClickListener(v -> {
+            int i = this.binding.elementBindingsContainerLl.indexOfChild(row);
+            this.binding.elementBindingsContainerLl.removeView(row);
+            if (i >= 0 && i < element.getBindings().length) element.removeBinding(i);
+        });
+
+        this.binding.elementBindingsContainerLl.addView(fieldBinding.getRoot());
+    }
+
+    private boolean hasStartSelectBinding(@NonNull AbstractControlElement el) {
+        for (GLFWBinding b : el.getBindings()) {
+            if (b == GLFWBinding.GAMEPAD_BUTTON_BACK
+                    || b == GLFWBinding.GAMEPAD_BUTTON_START
+                    || b == GLFWBinding.GAMEPAD_BUTTON_GUIDE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The icons of every pack (built in and imported) as a grid; a tap puts that icon on the selected
+     * element. White pictures, so each sits on a dark tile.
+     */
+    private void showPackIconPicker() {
+        AbstractControlElement el = binding.inputControlsV.getSelectedElement();
+        if (el == null) return;
+        final java.util.List<com.stormdroid.ats.controls.IconPacks.Pack> owner = new java.util.ArrayList<>();
+        final java.util.List<String> names = new java.util.ArrayList<>();
+        for (com.stormdroid.ats.controls.IconPacks.Pack p : com.stormdroid.ats.controls.IconPacks.list(this))
+            for (String icon : p.icons) { owner.add(p); names.add(icon); }
+        if (names.isEmpty()) return;
+        final float density = getResources().getDisplayMetrics().density;
+        final int tile = Math.round(56 * density), pad = Math.round(8 * density);
+        android.widget.GridView grid = new android.widget.GridView(this);
+        grid.setNumColumns(android.widget.GridView.AUTO_FIT);
+        grid.setColumnWidth(tile + pad);
+        grid.setVerticalSpacing(pad);
+        grid.setPadding(pad, pad, pad, pad);
+        final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
+        grid.setAdapter(new android.widget.BaseAdapter() {
+            @Override public int getCount() { return names.size(); }
+            @Override public Object getItem(int i) { return names.get(i); }
+            @Override public long getItemId(int i) { return i; }
+            @Override public View getView(int i, View convert, android.view.ViewGroup parent) {
+                android.widget.ImageView iv = convert instanceof android.widget.ImageView
+                        ? (android.widget.ImageView) convert : new android.widget.ImageView(AtsControlsEditorActivity.this);
+                iv.setLayoutParams(new android.widget.AbsListView.LayoutParams(tile, tile));
+                iv.setPadding(pad, pad, pad, pad);
+                iv.setBackgroundColor(0xFF37474F);
+                iv.setContentDescription(names.get(i));
+                iv.setImageBitmap(com.stormdroid.ats.controls.IconPacks.load(AtsControlsEditorActivity.this, owner.get(i), names.get(i)));
+                return iv;
+            }
+        });
+        grid.setOnItemClickListener((parent, view, i, id) -> {
+            if (com.stormdroid.ats.controls.IconPacks.setIcon(this, owner.get(i), names.get(i), el, binding.inputControlsV)) {
+                binding.elementIconNoTintCb.setChecked(!owner.get(i).tint);
+                binding.inputControlsV.invalidate();
+            } else {
+                Toast.makeText(this, R.string.control_element_custom_icon_failed, Toast.LENGTH_SHORT).show();
+            }
+            if (dialog[0] != null) dialog[0].dismiss();
+        });
+        dialog[0] = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.control_element_icon_from_pack)
+                .setView(grid)
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void onIconPicked(Uri uri) {
+        AbstractControlElement el = binding.inputControlsV.getSelectedElement();
+        boolean isButton = el instanceof com.stormdroid.ats.controls.ButtonControlElement;
+        boolean isRadial = el instanceof com.stormdroid.ats.controls.RadialMenuControlElement;
+        boolean isDpad = el instanceof com.stormdroid.ats.controls.DpadControlElement;
+        if (!isButton && !isRadial && !isDpad) {
+            Toast.makeText(this, R.string.control_element_custom_icon_select_button, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        File dir = binding.inputControlsV.getControlsIconsDir();
+        if (dir == null) {
+            Toast.makeText(this, R.string.control_element_custom_icon_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!dir.exists()) dir.mkdirs();
+        try {
+            // Decode bounds first to downscale large images (cap ~256px).
+            BitmapFactory.Options bounds = new BitmapFactory.Options();
+            bounds.inJustDecodeBounds = true;
+            try (InputStream is = getContentResolver().openInputStream(uri)) {
+                BitmapFactory.decodeStream(is, null, bounds);
+            }
+            int sample = 1;
+            final int max = 256;
+            while (bounds.outWidth / sample > max || bounds.outHeight / sample > max) sample *= 2;
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inSampleSize = sample;
+            Bitmap bmp;
+            try (InputStream is = getContentResolver().openInputStream(uri)) {
+                bmp = BitmapFactory.decodeStream(is, null, opts);
+            }
+            if (bmp == null) {
+                Toast.makeText(this, R.string.control_element_custom_icon_failed, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            // Trim transparent borders so the visible content fills the button regardless of how
+            // much padding the source PNG had (otherwise a padded image looks tiny, an edge-to-edge
+            // one looks oversized for the same on-screen box).
+            bmp = com.stormdroid.ats.controls.IconPacks.trimTransparentBorder(bmp);
+            String fileName = "icon_" + System.currentTimeMillis() + ".png";
+            File out = new File(dir, fileName);
+            try (FileOutputStream fos = new FileOutputStream(out)) {
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            }
+            boolean noTint = binding.elementIconNoTintCb.isChecked();
+            if (isButton) {
+                ((com.stormdroid.ats.controls.ButtonControlElement) el).setCustomIcon(fileName, noTint);
+            } else if (isDpad) {
+                ((com.stormdroid.ats.controls.DpadControlElement) el).setCustomIcon(fileName, noTint);
+            } else {
+                ((com.stormdroid.ats.controls.RadialMenuControlElement) el).setCustomIcon(fileName, noTint);
+            }
+            binding.inputControlsV.invalidate();
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.control_element_custom_icon_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        binding.inputControlsV.saveControlElementsToDisk();
+    }
+}
