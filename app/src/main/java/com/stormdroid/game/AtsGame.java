@@ -4,7 +4,7 @@ import java.io.File;
 
 /**
  * Against the Storm: the Windows build of the game (Unity 2021.3.45f2, Mono) on Unity 2021.3's Android
- * player (the :unity module), with the game's shaders retargeted to Vulkan beforehand (tools/retarget).
+ * player (the :unity module), with the game's shaders retargeted to Vulkan on the phone (ShaderPrep).
  * An instance is the game folder as a PC install has it: "Against the Storm.exe" and
  * "Against the Storm_Data" at its root.
  */

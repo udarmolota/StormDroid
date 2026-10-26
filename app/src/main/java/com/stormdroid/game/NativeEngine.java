@@ -115,6 +115,10 @@ public final class NativeEngine {
         File workDir = new File(gameDir, "native_engine");
         if (!workDir.isDirectory() && !workDir.mkdirs()) throw new IOException("cannot create " + workDir);
 
+        // Vulkan shaders: normally converted at install; an instance installed before the converter (or
+        // whose conversion failed then) is converted here, before the data archive is built from it.
+        if (!ShaderPrep.isPrepared(dataDir)) ShaderPrep.prepare(dataDir, workDir, null);
+
         long apkStamp = apkStamp(context);
         File overrides = extractManagedOverrides(context, apkStamp);
         File archive = buildDataArchive(context, dataDir, workDir, apkStamp);
@@ -322,6 +326,7 @@ public final class NativeEngine {
         return relative.startsWith("Managed/") || relative.startsWith("MonoBleedingEdge/")
                 || relative.startsWith("Plugins/") || relative.startsWith("StreamingAssets/")
                 || relative.equals("boot.config") || relative.equals("Resources/unity default resources")
+                || relative.equals(".shaderdroid")
                 || relative.endsWith(".png");
     }
 

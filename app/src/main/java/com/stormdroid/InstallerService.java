@@ -155,6 +155,24 @@ public class InstallerService extends Service {
             return;
         }
 
+        // The game ships Direct3D 11 shaders only; Unity's Android player needs Vulkan ones. Converted here,
+        // once, on the phone (ShaderDroid, under a minute). A failure leaves the instance installed: the
+        // launch tries again (NativeEngine.prepare).
+        broadcastProgress("Converting shaders for Vulkan...");
+        updateNotification("Converting shaders for Vulkan...");
+        try {
+            com.stormdroid.game.ShaderPrep.prepare(new File(instanceDir, AtsGame.DATA_DIR),
+                    new File(instanceDir, "native_engine"), line -> {
+                        // file headers and the summary; the per-shader lines go to logcat only
+                        if (line.startsWith("[") || line.startsWith("==")) broadcastProgress("Shaders: " + line);
+                    });
+        } catch (IOException e) {
+            Log.e(TAG, "shader conversion failed", e);
+            broadcastDone(false, "Instance '" + instanceName + "' installed, but its shaders were not "
+                    + "converted (" + e.getMessage() + "). Launching will try again.");
+            return;
+        }
+
         broadcastProgress("Instance installed.");
         broadcastDone(true, "Instance '" + instanceName + "' installed — ready to launch");
     }
@@ -298,6 +316,10 @@ public class InstallerService extends Service {
         NotificationChannel ch = new NotificationChannel(
                 CHANNEL, "Installation", NotificationManager.IMPORTANCE_LOW);
         getSystemService(NotificationManager.class).createNotificationChannel(ch);
+    }
+
+    private void updateNotification(String text) {
+        getSystemService(NotificationManager.class).notify(NOTIF_ID, buildNotification(text));
     }
 
     private Notification buildNotification(String text) {

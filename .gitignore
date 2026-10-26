@@ -23,3 +23,6 @@ _*
 /unity/prepared.work/
 /unity/.cxx/
 /unity/build/
+
+# ShaderDroid, the closed shader converter: a prebuilt drop-in from the private repository, never committed
+app/src/main/jniLibs/arm64-v8a/libshaderdroid.so

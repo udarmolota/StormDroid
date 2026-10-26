@@ -22,6 +22,13 @@ code for the parts of the Unity runtime used, but shall include the source code
 of the parts of this Program that are combined with it (il2mono, the Vulkan shim
 and the input bridge assembly, among others).
 
+If you modify this Program, or any covered work, by linking or combining it with
+ShaderDroid (libshaderdroid.so, the shader converter published by udarmolota under
+its own license), the licensor of this Program grants you additional permission to
+convey the resulting work. Corresponding Source for a non-source form of such a
+combination shall not include the source code of ShaderDroid, but shall include the
+source code of the parts of this Program that are combined with it.
+
 StormDroid is an unofficial, community-developed compatibility launcher for running
 the Windows version of Against the Storm on ARM64 Android devices.
 
@@ -88,6 +95,16 @@ Unity Android player   Unity license        Copyright (c) Unity Technologies
 (libunity.so, libmain.so, unity-classes.jar, UnityEngine*.dll)
                        Extracted by tools/unity/prepare_unity.sh from Unity's own Android Support
                        package; see the additional permission above.
+
+ShaderDroid            Proprietary          Copyright (c) 2026 udarmolota
+(libshaderdroid.so)                         Closed-source Direct3D 11 -> Vulkan shader converter,
+                       shipped prebuilt in release builds (not in the repository; the launcher
+                       works without it, see com.shaderdroid.ShaderDroid). Contains, under their
+                       own permissive licenses: HLSLcc (MIT, Unity Technologies), SMOL-V (MIT,
+                       Aras Pranckevicius), glslang (BSD-3-Clause and others, The Khronos Group),
+                       SPIRV-Tools and shaderc (Apache 2.0, The Khronos Group / Google),
+                       SPIRV-Headers (MIT-style, The Khronos Group), lz4 (BSD-2-Clause, Yann Collet).
+                       See the additional permission above.
 
 --- Java / Gradle dependencies ---
 
