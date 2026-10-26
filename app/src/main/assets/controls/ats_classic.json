@@ -2,8 +2,8 @@
   {
     "alpha": 94,
     "bindings": [],
-    "centerXRelative": 0.9153846,
-    "centerYRelative": 0.7583333,
+    "centerXRelative": 0.88846153,
+    "centerYRelative": 0.81666666,
     "color": -1,
     "dragLook": false,
     "dragLookTouchpad": false,
@@ -22,8 +22,8 @@
   {
     "alpha": 94,
     "bindings": [],
-    "centerXRelative": 0.16153847,
-    "centerYRelative": 0.7583333,
+    "centerXRelative": 0.14176308,
+    "centerYRelative": 0.7505208,
     "color": -1,
     "dragLook": false,
     "dragLookTouchpad": false,
@@ -44,8 +44,8 @@
     "bindings": [
       "MOUSE_BUTTON_RIGHT"
     ],
-    "centerXRelative": 0.8076923,
-    "centerYRelative": 0.64166665,
+    "centerXRelative": 0.7807692,
+    "centerYRelative": 0.7,
     "color": -1,
     "dragLook": false,
     "dragLookTouchpad": false,
@@ -67,8 +67,8 @@
     "bindings": [
       "MOUSE_BUTTON_LEFT"
     ],
-    "centerXRelative": 0.29615384,
-    "centerYRelative": 0.64166665,
+    "centerXRelative": 0.26923078,
+    "centerYRelative": 0.7,
     "color": -1,
     "dragLook": false,
     "dragLookTouchpad": false,
@@ -274,8 +274,8 @@
     "bindings": [
       "KEY_R"
     ],
-    "centerXRelative": 0.88846153,
-    "centerYRelative": 0.525,
+    "centerXRelative": 0.9692308,
+    "centerYRelative": 0.5833333,
     "color": -1,
     "dragLook": false,
     "dragLookTouchpad": false,
@@ -297,8 +297,8 @@
     "bindings": [
       "KEY_N"
     ],
-    "centerXRelative": 0.9423077,
-    "centerYRelative": 0.525,
+    "centerXRelative": 0.9692308,
+    "centerYRelative": 0.46666667,
     "color": -1,
     "dragLook": false,
     "dragLookTouchpad": false,
@@ -475,5 +475,51 @@
     "tapDisabled": false,
     "text": "U",
     "type": "BUTTON_RECT"
+  },
+  {
+    "alpha": 94,
+    "bindings": [
+      "KEY_Q"
+    ],
+    "centerXRelative": 0.10769231,
+    "centerYRelative": 0.525,
+    "color": -1,
+    "dragLook": false,
+    "dragLookTouchpad": false,
+    "floatZone": 2.5,
+    "floating": false,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.8,
+    "sensitivity": 2.0,
+    "style": "GLASS",
+    "tapDisabled": false,
+    "text": "Q",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 94,
+    "bindings": [
+      "KEY_E"
+    ],
+    "centerXRelative": 0.18846154,
+    "centerYRelative": 0.525,
+    "color": -1,
+    "dragLook": false,
+    "dragLookTouchpad": false,
+    "floatZone": 2.5,
+    "floating": false,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.8,
+    "sensitivity": 2.0,
+    "style": "GLASS",
+    "tapDisabled": false,
+    "text": "E",
+    "type": "BUTTON_CIRCLE"
   }
 ]

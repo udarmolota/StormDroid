@@ -33,7 +33,7 @@ import java.util.zip.ZipInputStream;
  *
  * <p>A pack is a zip of PNG files, white on a transparent background (the button tints them with
  * its colour), named by action: click, right_click, middle_click, zoom_in, zoom_out, menu, pause,
- * speed_1..speed_4, queue, rotate_right, rotate_left, keyboard, toggle_controls, and the free ones a
+ * speed_1..speed_4, queue, rotate_right, rotate_left, camera_left, camera_right, keyboard, toggle_controls, and the free ones a
  * player can pick by hand. An optional pack.json gives the name: {"format": 1, "name": "..."}.
  * Any other PNG in the zip is imported too, as an icon to pick by hand. A pack of colour pictures says
  * "tint": false in pack.json: its icons are then shown in their own colours, not the button's. The packs live outside the
@@ -243,6 +243,9 @@ public final class IconPacks {
         action("queue", "KEY_LEFT_SHIFT");
         action("rotate_right", "KEY_R");
         action("rotate_left", "KEY_N");
+        // Camera rotation: straight arrows, so they never pass for the building rotation above.
+        action("camera_left", "KEY_Q");
+        action("camera_right", "KEY_E");
 
         action("menu", "GAMEPAD_BUTTON_START");
 
