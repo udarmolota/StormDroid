@@ -109,6 +109,7 @@ public class NativeUnityActivity extends Activity implements IUnityPlayerLifecyc
             });
         }
         setContentView(root);
+        applyRenderSize(getIntent().getStringArrayExtra(EXTRA_ENV));
         mUnityPlayer.requestFocus();
         overlay = createOverlay(getIntent().getStringExtra(EXTRA_OVERLAY));
         if (overlay != null) {
@@ -117,6 +118,60 @@ public class NativeUnityActivity extends Activity implements IUnityPlayerLifecyc
         }
         keepScreenOn();
         hideSystemBars();   // after setContentView: the decor view / insets controller now exist
+    }
+
+    /**
+     * The launcher's render size (STORMDROID_RENDER_SIZE=WxH) as the player surface's buffer size from
+     * the start, before Unity creates its first swapchain. Otherwise the surface starts at the screen's
+     * size and il2mono switches it to the render size once the game runs; for a game that never sets its
+     * own resolution (Against the Storm with fresh Prefs) that switch lands in the middle of loading the
+     * menu and the player never draws again (2026-10-26). With the buffer at that size already, the
+     * later SetResolution to the same size changes nothing. The view still fills the screen (or the box);
+     * the compositor scales the smaller buffer up.
+     */
+    private void applyRenderSize(String[] env) {
+        if (env == null) return;
+        int w = 0, h = 0;
+        for (String entry : env) {
+            if (!entry.startsWith("STORMDROID_RENDER_SIZE=")) continue;
+            String v = entry.substring("STORMDROID_RENDER_SIZE=".length());
+            int x = v.indexOf('x');
+            if (x <= 0) return;
+            try {
+                w = Integer.parseInt(v.substring(0, x).trim());
+                h = Integer.parseInt(v.substring(x + 1).trim());
+            } catch (NumberFormatException e) {
+                return;
+            }
+        }
+        if (w <= 0 || h <= 0) return;
+        final int fw = w, fh = h;
+        android.view.SurfaceView sv = findSurfaceView(mUnityPlayer);
+        if (sv != null) {
+            sv.getHolder().setFixedSize(fw, fh);
+            android.util.Log.i("NativeUnity", "player surface buffer " + fw + "x" + fh + " from the start");
+        } else {
+            // the player adds its SurfaceView a little later on some versions
+            mUnityPlayer.post(() -> {
+                android.view.SurfaceView later = findSurfaceView(mUnityPlayer);
+                if (later != null) {
+                    later.getHolder().setFixedSize(fw, fh);
+                    android.util.Log.i("NativeUnity", "player surface buffer " + fw + "x" + fh + " (posted)");
+                }
+            });
+        }
+    }
+
+    private static android.view.SurfaceView findSurfaceView(View v) {
+        if (v instanceof android.view.SurfaceView) return (android.view.SurfaceView) v;
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                android.view.SurfaceView s = findSurfaceView(g.getChildAt(i));
+                if (s != null) return s;
+            }
+        }
+        return null;
     }
 
     // The player hides the bars itself (unity.launch-fullscreen), but not for good: on Samsung the

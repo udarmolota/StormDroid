@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Accent = StormDroid brand (brick + gold) -->
+        <!-- Main colour = the storm blue of the key art (values/colors.xml) -->
         <item name="colorPrimary">@color/rd_primary</item>
         <item name="colorOnPrimary">@android:color/white</item>
         <item name="colorPrimaryContainer">@color/rd_primary_container</item>
         <item name="colorOnPrimaryContainer">@color/rd_on_primary_container</item>
         <item name="colorOutline">@color/rd_primary</item>
 
-        <!-- Neutral M3 light scheme (readable text + consistent surfaces) -->
+        <!-- Secondary = the red-brown accent (Play, card headers); blue-grey neutrals -->
         <item name="colorSecondary">@color/md_theme_secondary</item>
         <item name="colorOnSecondary">@color/md_theme_onSecondary</item>
         <item name="colorSecondaryContainer">@color/md_theme_secondaryContainer</item>
@@ -41,7 +41,7 @@
 
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <!-- Faint logo-piece behind every screen (surface colour + corner watermark). -->
+        <!-- Surface colour behind every screen (the logo watermark comes back with the final logo). -->
         <item name="android:windowBackground">@drawable/rd_page_bg</item>
         <!-- windowLightStatusBar/NavigationBar inherited from the DayNight parent (correct per mode). -->
 

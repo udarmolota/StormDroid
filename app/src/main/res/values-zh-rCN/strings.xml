@@ -28,14 +28,12 @@
     <string name="render_res_label">渲染分辨率</string>
     <string name="render_res_fullscreen">全屏</string>
     <string name="render_res_black_margins">黑边</string>
-    <string name="nav_export_logs">导出日志（ZIP）</string>
     <string name="nav_updates">新版本（GitHub）</string>
     <string name="nav_bug_report">报告问题</string>
     <string name="launcher_empty_title">开始使用</string>
     <string name="nav_label_donate">捐助</string>
     <string name="bug_report_subject">STORMDROID REPORT %1$s</string>
     <string name="bug_report_body">你好，我要报告一个新问题。\n\n描述：\n\n\n---\n%1$s</string>
-    <string name="bug_report_no_mail">此设备上没有找到邮件应用。</string>
     <!-- Support dialog (heart icon). ko-fi link is made clickable at runtime. -->
     <string name="donate_title">支持开发</string>
     <string name="donate_message">喜欢 StormDroid，想支持一下？\n\n作者与维护者：ko-fi.com/udarmolota\n\n每一份支持都能让项目继续走下去。谢谢！❤</string>
@@ -82,7 +80,7 @@
     <string name="release_notes_title">v%1$s 更新内容</string>
     <string name="launch_starting">正在启动游戏…</string>
     <string name="launch_preparing_title">正在准备启动</string>
-    <string name="launch_preparing_message">正在准备游戏…… 安装或更新后的首次启动可能需要一分钟。</string>
+    <string name="launch_preparing_message">正在准备游戏。首次启动会转换着色器。</string>
     <string name="editor_layout_classic">经典</string>
     <string name="controls_editor_classic_loaded">已加载经典布局</string>
 </resources>

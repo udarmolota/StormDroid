@@ -115,8 +115,8 @@ public final class NativeEngine {
         File workDir = new File(gameDir, "native_engine");
         if (!workDir.isDirectory() && !workDir.mkdirs()) throw new IOException("cannot create " + workDir);
 
-        // Vulkan shaders: normally converted at install; an instance installed before the converter (or
-        // whose conversion failed then) is converted here, before the data archive is built from it.
+        // Vulkan shaders: the game ships Direct3D 11 ones only. Converted here before the first launch
+        // (and after a failed attempt), before the data archive is built from the data folder.
         if (!ShaderPrep.isPrepared(dataDir)) ShaderPrep.prepare(dataDir, workDir, null);
 
         long apkStamp = apkStamp(context);

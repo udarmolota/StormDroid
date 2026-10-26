@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon background: the dark storm blue behind the copper ring (one colour in light and dark
+     mode; the launcher shows the icon outside the app's theme). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/rd_primary"/>
+    <solid android:color="@color/ic_launcher_bg"/>
 </shape>

@@ -34,7 +34,6 @@
     <string name="render_res_fullscreen">fullscreen</string>
     <string name="render_res_black_margins">black margins</string>
     <string name="render_res_hint">Lower = more FPS on weak GPUs. Native = sharpest. The game\'s interface keeps its size; change it in the game\'s own video options (UI size).</string>
-    <string name="nav_export_logs">Export logs (ZIP)</string>
     <string name="nav_updates">New versions (GitHub)</string>
     <string name="nav_bug_report">Report a bug</string>
     <string name="launcher_empty_title">Getting started</string>
@@ -51,7 +50,6 @@
     <string name="bug_report_email" translatable="false">210478@mail.ru</string>
     <string name="bug_report_subject">STORMDROID REPORT %1$s</string>
     <string name="bug_report_body">Hi, I have a new bug report.\n\nDescription: \n\n\n---\n%1$s</string>
-    <string name="bug_report_no_mail">No email app found on this device.</string>
     <!-- Support dialog (heart icon). ko-fi link is made clickable at runtime. -->
     <string name="donate_title">Support development</string>
     <string name="donate_message">Enjoying StormDroid and want to support it?\n\nMade and maintained by: ko-fi.com/udarmolota\n\nEvery bit helps keep the work going. Thank you! ❤</string>
@@ -166,7 +164,66 @@
     <string name="percentage_format" translatable="false">%d%%</string>
     <string name="launch_starting">Starting the game…</string>
     <string name="launch_preparing_title">Preparing to launch</string>
-    <string name="launch_preparing_message">Getting the game ready… The first launch after an install or update can take up to a minute.</string>
+    <string name="launch_preparing_message">Preparing the game. The first launch converts the shaders.</string>
     <string name="editor_layout_classic">Classic</string>
     <string name="controls_editor_classic_loaded">Classic layout loaded</string>
+    <string name="nav_saves_transfer">Import/export saves</string>
+    <string name="nav_settings_transfer">Import/export settings</string>
+    <string name="transfer_instance">Instance</string>
+    <string name="transfer_no_instances">No instances yet</string>
+    <string name="transfer_import">Import</string>
+    <string name="transfer_export">Export</string>
+    <string name="saves_transfer_import_title">Import saves</string>
+    <string name="saves_transfer_import_hint" formatted="false">A zip with Against the Storm saves (the *.save files): exported from StormDroid, or the PC folder %USERPROFILE%\\AppData\\LocalLow\\Eremite Games\\Against the Storm zipped. The current saves are backed up next to the instance first.</string>
+    <string name="saves_transfer_export_title">Export saves</string>
+    <string name="saves_transfer_export_hint" formatted="false">Saves this instance\'s saves to a zip. On a PC, unzip it into %USERPROFILE%\\AppData\\LocalLow\\Eremite Games\\Against the Storm with the game closed.</string>
+    <string name="settings_transfer_import_title">Import game settings</string>
+    <string name="settings_transfer_import_hint">A zip of game settings exported from StormDroid on another phone: graphics, audio, camera, keys, language. Close the game first.</string>
+    <string name="settings_transfer_export_title">Export game settings</string>
+    <string name="settings_transfer_export_hint">Saves the game\'s settings to a zip, to move them to another phone. The PC version keeps its settings in the Windows registry, so they cannot move between a PC and a phone.</string>
+    <string name="saves_transfer_import_confirm">Replace the saves of %2$s with the ones in %1$s? The current saves are backed up next to the instance first.</string>
+    <string name="settings_transfer_import_confirm">Replace the game settings with the ones in %1$s?</string>
+    <string name="transfer_imported">Imported (%1$d files)</string>
+    <string name="transfer_import_failed">Import failed: %1$s</string>
+    <string name="transfer_exported">Exported %1$d files (%2$d KB)</string>
+    <string name="transfer_export_failed">Export failed: %1$s</string>
+    <string name="bug_report_intro">Something went wrong? Send us a report. It carries the game\'s logs, so we can see what happened.</string>
+    <string name="bug_report_group_email">Send by email</string>
+    <string name="bug_report_steps">1. Choose the game above.\n2. Tap Send by email.\n3. In the list that opens, pick your mail app (Gmail, Outlook…).\n4. Write a few words about what happened and send.</string>
+    <string name="bug_report_send_email">Send by email</string>
+    <string name="bug_report_no_email_title">No email app on this device?</string>
+    <string name="bug_report_no_email_text">Save the report to a file, then send it from any device to this address. Attach the file and write a few words about what happened.</string>
+    <string name="bug_report_copy">Copy</string>
+    <string name="bug_report_save_file">Save report to a file</string>
+    <string name="bug_report_copied">Address copied</string>
+    <string name="bug_report_pick_instance">Which game is this report about?</string>
+    <string name="bug_report_preparing">Preparing bug report…</string>
+    <string name="bug_report_pick_mail">Send with</string>
+    <string name="bug_report_no_mail_use_file">No email app found on this device. Save the report to a file and send it from another device.</string>
+    <string name="bug_report_saved">Report saved</string>
+    <string name="bug_report_save_failed">Could not save the report: %1$s</string>
+    <string name="news_title">Against the Storm news</string>
+    <string name="nav_download_game">Download from Steam</string>
+    <string name="download_game_title">Download Against the Storm from Steam</string>
+    <string name="download_login_note">Your login is sent to Steam (the same way DepotDownloader works) and is NOT stored. Approve the sign-in in your Steam Mobile app, or enter the Steam Guard code when asked. The game must be on this Steam account.</string>
+    <string name="download_user_hint">Steam username</string>
+    <string name="download_pass_hint">Steam password</string>
+    <string name="download_manifest_hint">Advanced: manifest ID (blank = newest version)</string>
+    <string name="download_start">Download</string>
+    <string name="download_cancel">Cancel download</string>
+    <string name="download_cancel_confirm">Cancel the download in progress? Downloading again continues where it stopped.</string>
+    <string name="download_required">Required</string>
+    <string name="download_space_note">The game takes about 7 GB while it downloads, then it is packed into a zip in Download/StormDroid (several GB more for a moment). Stay on one network until the download finishes.</string>
+    <string name="download_guard_title">Enter the Steam Guard code</string>
+    <string name="download_guard_wrong">Code incorrect, try again</string>
+    <string name="download_guard_hint">Steam Guard code</string>
+    <string name="download_guard_email_hint">Code emailed to %1$s</string>
+    <string name="nav_header_subtitle">Against the Storm on Android</string>
+    <string name="download_storage_title">Storage access needed</string>
+    <string name="download_storage_message">The game is saved as a zip into the public Download/StormDroid folder, so you can see, keep and reuse it. Please allow "All files access" for StormDroid, then tap Download again.</string>
+    <string name="download_storage_grant">Allow</string>
+    <string name="download_create_instance">Create instance from %1$s</string>
+    <string name="install_starting">Starting…</string>
+    <string name="install_copying">Copying the archive… %1$d%% (%2$d / %3$d MB)</string>
+    <string name="install_extracting">Unpacking the game… %1$d%% (%2$d / %3$d MB)</string>
 </resources>

@@ -20,7 +20,7 @@
         android:layout_gravity="top|start"
         android:scaleType="fitStart"
         android:alpha="0.16"
-        android:src="@drawable/rd_logo_small"
+        android:src="@drawable/sd_logo_corner"
         android:contentDescription="@null" />
 
     <LinearLayout
@@ -76,7 +76,7 @@
             style="@style/AppTheme.ImageButton"
             android:layout_width="40dp"
             android:src="@drawable/mt_icon_play"
-            android:tint="?attr/colorPrimary"
+            android:tint="?attr/colorSecondary"
             android:contentDescription="@string/launch" />
     </LinearLayout>
     </FrameLayout>

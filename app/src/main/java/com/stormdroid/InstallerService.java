@@ -45,6 +45,8 @@ public class InstallerService extends Service {
     public static final String BROADCAST_ERROR    = "com.stormdroid.INSTALL_ERROR";
     public static final String EXTRA_MESSAGE      = "message";
     public static final String EXTRA_SUCCESS      = "success";
+    /** Progress broadcasts: 0..100, or -1 when the step has no measurable progress. */
+    public static final String EXTRA_PERCENT      = "percent";
 
     private AppStorage storage;
     private LauncherPreferences prefs;
@@ -155,24 +157,8 @@ public class InstallerService extends Service {
             return;
         }
 
-        // The game ships Direct3D 11 shaders only; Unity's Android player needs Vulkan ones. Converted here,
-        // once, on the phone (ShaderDroid, under a minute). A failure leaves the instance installed: the
-        // launch tries again (NativeEngine.prepare).
-        broadcastProgress("Converting shaders for Vulkan...");
-        updateNotification("Converting shaders for Vulkan...");
-        try {
-            com.stormdroid.game.ShaderPrep.prepare(new File(instanceDir, AtsGame.DATA_DIR),
-                    new File(instanceDir, "native_engine"), line -> {
-                        // file headers and the summary; the per-shader lines go to logcat only
-                        if (line.startsWith("[") || line.startsWith("==")) broadcastProgress("Shaders: " + line);
-                    });
-        } catch (IOException e) {
-            Log.e(TAG, "shader conversion failed", e);
-            broadcastDone(false, "Instance '" + instanceName + "' installed, but its shaders were not "
-                    + "converted (" + e.getMessage() + "). Launching will try again.");
-            return;
-        }
-
+        // The game's Direct3D 11 shaders are converted for Vulkan before the first launch, not here
+        // (NativeEngine.prepare -> ShaderPrep): installing only puts the files in place.
         broadcastProgress("Instance installed.");
         broadcastDone(true, "Instance '" + instanceName + "' installed — ready to launch");
     }
@@ -181,11 +167,26 @@ public class InstallerService extends Service {
     // HELPERS
     // =========================================================================
 
+    /**
+     * Unpack the archive, reporting the share of the uncompressed size written so far (the game is
+     * several GB: minutes on a phone, which without a number looked like a hang).
+     */
     private void extractZip(File zipFile, File destDir) throws IOException {
         destDir.mkdirs();
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
+        long total = 0;
+        try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zipFile)) {
+            java.util.Enumeration<? extends ZipEntry> en = zf.entries();
+            while (en.hasMoreElements()) {
+                long sz = en.nextElement().getSize();
+                if (sz > 0) total += sz;
+            }
+        }
+        long written = 0;
+        int lastPct = -1;
+        long lastTime = 0;
+        try (ZipInputStream zis = new ZipInputStream(new java.io.BufferedInputStream(new FileInputStream(zipFile), 1 << 16))) {
             ZipEntry entry;
-            byte[] buf = new byte[65536];
+            byte[] buf = new byte[1 << 16];
             while ((entry = zis.getNextEntry()) != null) {
                 File out = new File(destDir, entry.getName());
                 if (entry.isDirectory()) {
@@ -194,7 +195,19 @@ public class InstallerService extends Service {
                     out.getParentFile().mkdirs();
                     try (FileOutputStream fos = new FileOutputStream(out)) {
                         int len;
-                        while ((len = zis.read(buf)) != -1) fos.write(buf, 0, len);
+                        while ((len = zis.read(buf)) != -1) {
+                            fos.write(buf, 0, len);
+                            written += len;
+                            int pct = total > 0 ? (int) Math.min(100, written * 100 / total) : -1;
+                            long now = System.currentTimeMillis();
+                            if (pct != lastPct && now - lastTime > 300) {
+                                lastPct = pct;
+                                lastTime = now;
+                                String msg = getString(R.string.install_extracting, pct, written / (1024 * 1024), total / (1024 * 1024));
+                                broadcastProgress(msg, pct);
+                                updateNotification(msg, pct);
+                            }
+                        }
                     }
                 }
                 zis.closeEntry();
@@ -282,10 +295,15 @@ public class InstallerService extends Service {
     // =========================================================================
 
     private void broadcastProgress(String msg) {
-        Log.d(TAG, msg);
+        broadcastProgress(msg, -1);
+    }
+
+    private void broadcastProgress(String msg, int percent) {
+        if (percent < 0) Log.d(TAG, msg);
         Intent i = new Intent(BROADCAST_PROGRESS);
         i.setPackage(getPackageName());   // explicit target so RECEIVER_NOT_EXPORTED receivers get it
         i.putExtra(EXTRA_MESSAGE, msg);
+        i.putExtra(EXTRA_PERCENT, percent);
         sendBroadcast(i);
     }
 
@@ -318,17 +336,24 @@ public class InstallerService extends Service {
         getSystemService(NotificationManager.class).createNotificationChannel(ch);
     }
 
-    private void updateNotification(String text) {
-        getSystemService(NotificationManager.class).notify(NOTIF_ID, buildNotification(text));
+    private Notification buildNotification(String text) {
+        return buildNotification(text, -1);
     }
 
-    private Notification buildNotification(String text) {
-        return new NotificationCompat.Builder(this, CHANNEL)
+    /** percent 0..100 shows a progress bar in the notification, -1 none. */
+    private Notification buildNotification(String text, int percent) {
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL)
                 .setContentTitle("StormDroid")
                 .setContentText(text)
                 .setSmallIcon(android.R.drawable.ic_popup_sync)
-                .setOngoing(true)
-                .build();
+                .setOnlyAlertOnce(true)
+                .setOngoing(true);
+        if (percent >= 0) b.setProgress(100, percent, false);
+        return b.build();
+    }
+
+    private void updateNotification(String text, int percent) {
+        getSystemService(NotificationManager.class).notify(NOTIF_ID, buildNotification(text, percent));
     }
 
     // =========================================================================

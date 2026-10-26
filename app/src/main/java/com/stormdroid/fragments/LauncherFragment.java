@@ -91,6 +91,53 @@ public class LauncherFragment extends Fragment {
         btnClearLog.setOnClickListener(v -> clearLog());
 
         maybeShowReleaseNotes();
+        showNews(view);
+    }
+
+    /** Fetched once per app start; later visits to the home screen show what is cached. */
+    private static boolean newsFetched;
+
+    /**
+     * Against the Storm news under the instances (ported from ValDroid): the cached posts at once, then
+     * fresh ones from Steam once per app start (SteamNews). A tap opens the post on Steam.
+     */
+    private void showNews(View view) {
+        Context app = requireContext().getApplicationContext();
+        fillNews(view, com.stormdroid.SteamNews.cached(app));
+        if (newsFetched) return;
+        newsFetched = true;
+        new Thread(() -> {
+            java.util.List<com.stormdroid.SteamNews.Item> fresh = com.stormdroid.SteamNews.fetch(app);
+            if (fresh != null) mainHandler.post(() -> { if (isAdded() && getView() != null) fillNews(getView(), fresh); });
+        }, "sd-news").start();
+    }
+
+    private void fillNews(View view, java.util.List<com.stormdroid.SteamNews.Item> items) {
+        ViewGroup list = view.findViewById(R.id.ll_news_items);
+        list.removeAllViews();
+        view.findViewById(R.id.ll_news).setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
+        Context app = requireContext().getApplicationContext();
+        int width = getResources().getDisplayMetrics().widthPixels;
+        java.text.DateFormat df = java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM);
+        for (com.stormdroid.SteamNews.Item item : items) {
+            View card = LayoutInflater.from(requireContext()).inflate(R.layout.item_news, list, false);
+            ((TextView) card.findViewById(R.id.tv_news_date)).setText(df.format(new java.util.Date(item.date * 1000)));
+            ((TextView) card.findViewById(R.id.tv_news_title)).setText(item.title);
+            TextView snippet = card.findViewById(R.id.tv_news_snippet);
+            snippet.setText(item.snippet);
+            snippet.setVisibility(item.snippet.isEmpty() ? View.GONE : View.VISIBLE);
+            card.setOnClickListener(v -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(item.link)));
+                } catch (Exception ignored) {}   // no browser
+            });
+            android.widget.ImageView image = card.findViewById(R.id.iv_news_image);
+            new Thread(() -> {
+                android.graphics.Bitmap bmp = com.stormdroid.SteamNews.image(app, item.imageUrl, width);
+                if (bmp != null) mainHandler.post(() -> { image.setImageBitmap(bmp); image.setVisibility(View.VISIBLE); });
+            }, "sd-news-image").start();
+            list.addView(card);
+        }
     }
 
     /**

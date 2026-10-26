@@ -31,13 +31,11 @@
     <string name="render_res_label">Resolução de renderização</string>
     <string name="render_res_fullscreen">tela cheia</string>
     <string name="render_res_black_margins">bordas pretas</string>
-    <string name="nav_export_logs">Exportar registros (ZIP)</string>
     <string name="nav_updates">Novas versões (GitHub)</string>
     <string name="nav_bug_report">Relatar um problema</string>
     <string name="launcher_empty_title">Por onde começar</string>
     <string name="bug_report_subject">STORMDROID REPORT %1$s</string>
     <string name="bug_report_body">Olá, tenho um novo relato de problema.\n\nDescrição: \n\n\n---\n%1$s</string>
-    <string name="bug_report_no_mail">Nenhum app de e-mail encontrado neste aparelho.</string>
     <!-- Support dialog (heart icon). ko-fi link is made clickable at runtime. -->
     <string name="donate_title">Apoiar o desenvolvimento</string>
     <string name="donate_message">Gostou do StormDroid e quer apoiar o projeto?\n\nCriado e mantido por: ko-fi.com/udarmolota\n\nCada contribuição ajuda o trabalho a continuar. Obrigado! ❤</string>
@@ -149,7 +147,7 @@
     <string name="editor_grid_on">Grade: sim</string>
     <string name="launch_starting">Iniciando o jogo…</string>
     <string name="launch_preparing_title">Preparando a inicialização</string>
-    <string name="launch_preparing_message">Preparando o jogo… A primeira inicialização após instalar ou atualizar pode levar até um minuto.</string>
+    <string name="launch_preparing_message">Preparando o jogo. A primeira inicialização converte os shaders.</string>
     <string name="editor_layout_classic">Clássico</string>
     <string name="controls_editor_classic_loaded">Layout clássico carregado</string>
 </resources>

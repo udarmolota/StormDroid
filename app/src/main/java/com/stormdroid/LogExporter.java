@@ -36,17 +36,18 @@ public final class LogExporter {
 
     public static Result export(android.content.Context ctx, GameInstance gi, OutputStream rawOut) {
         Result r = new Result();
-        if (gi == null) { r.error = "No game instance selected."; return r; }
-
-        File gamePath = new File(gi.getGamePath());
+        // No instance (the install itself failed): the launcher's own logs still go.
+        File gamePath = gi != null ? new File(gi.getGamePath()) : null;
 
         // Global (not instance-scoped) uncaught-crash log. Lives in the app's private files dir.
         File crashLog = new File(AppStorage.requireSingleton().getHomePath(),
                 StormDroidApplication.CRASH_LOG);
 
         File[] candidates = {
-                new File(gamePath, com.stormdroid.game.NativeLog.FILE),
-                new File(gamePath, com.stormdroid.game.NativeLog.PREV),
+                gamePath != null ? new File(gamePath, com.stormdroid.game.NativeLog.FILE) : null,
+                gamePath != null ? new File(gamePath, com.stormdroid.game.NativeLog.PREV) : null,
+                // the shader conversion's report (ShaderPrep)
+                gamePath != null ? new File(gamePath, "native_engine/shaderdroid_report.json") : null,
                 crashLog,
         };
 

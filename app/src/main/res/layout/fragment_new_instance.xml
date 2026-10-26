@@ -46,4 +46,23 @@
         android:layout_height="wrap_content"
         android:text="@string/install" />
 
+    <!-- Install progress (copying the picked archive, checking, unpacking), shown once Install is tapped. -->
+    <ProgressBar
+        android:id="@+id/progress_install"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:indeterminate="true"
+        android:max="100"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tv_install_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:visibility="gone" />
+
 </LinearLayout>

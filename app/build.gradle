@@ -13,6 +13,8 @@ android {
         targetSdk = 35
         versionCode 1
         versionName "0.1.0"
+        // JavaSteam + protobuf + kotlin push the app past the 64K method limit.
+        multiDexEnabled true
         ndk {
             abiFilters "arm64-v8a"
         }
@@ -68,4 +70,14 @@ dependencies {
     implementation 'commons-io:commons-io:2.15.1'   // required by commons-compress 1.26.x at runtime
     implementation 'org.tukaani:xz:1.11'
     implementation 'com.google.code.gson:gson:2.10.1'
+
+    // In-app Steam download (SteamDownloader, from ValDroid/RimDroid): JavaSteam (MIT, a SteamKit2 port)
+    // for the sign-in, licenses, depot keys and CDN chunks. bcprov + protobuf-java are its "optional"
+    // deps, at the versions JavaSteam 1.8.0 was built against. The depot-downloader artifact brings the
+    // ktor HTTP client the CDN code uses; zstd-jni (@aar: Android natives) decompresses zstd chunks.
+    implementation 'in.dragonbra:javasteam:1.8.0'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.83'
+    implementation 'com.google.protobuf:protobuf-java:4.31.1'
+    implementation 'in.dragonbra:javasteam-depotdownloader:1.8.0'
+    implementation 'com.github.luben:zstd-jni:1.5.7-6@aar'
 }

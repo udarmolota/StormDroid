@@ -24,6 +24,48 @@
         android:name="com.stormdroid.fragments.NewInstanceFragment"
         android:label="@string/nav_new_instance" />
 
+    <fragment
+        android:id="@+id/saves_transfer_fragment"
+        android:name="com.stormdroid.fragments.DataTransferFragment"
+        android:label="@string/nav_saves_transfer">
+        <argument
+            android:name="kind"
+            app:argType="string"
+            android:defaultValue="saves" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settings_transfer_fragment"
+        android:name="com.stormdroid.fragments.DataTransferFragment"
+        android:label="@string/nav_settings_transfer">
+        <argument
+            android:name="kind"
+            app:argType="string"
+            android:defaultValue="settings" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/bug_report_fragment"
+        android:name="com.stormdroid.fragments.BugReportFragment"
+        android:label="@string/nav_bug_report" />
+
+    <fragment
+        android:id="@+id/download_fragment"
+        android:name="com.stormdroid.fragments.DownloadFragment"
+        android:label="@string/nav_download_game" />
+
+    <action android:id="@+id/action_open_download"
+        app:destination="@id/download_fragment" />
+
+    <action android:id="@+id/action_open_saves_transfer"
+        app:destination="@id/saves_transfer_fragment" />
+
+    <action android:id="@+id/action_open_settings_transfer"
+        app:destination="@id/settings_transfer_fragment" />
+
+    <action android:id="@+id/action_open_bug_report"
+        app:destination="@id/bug_report_fragment" />
+
     <action android:id="@+id/action_settings"
         app:destination="@id/settings_fragment" />
 

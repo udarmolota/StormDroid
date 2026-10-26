@@ -7,6 +7,10 @@
             android:id="@+id/action_install_instance"
             android:icon="@drawable/mt_icon_add"
             android:title="@string/nav_new_instance" />
+        <item
+            android:id="@+id/action_download_game"
+            android:icon="@drawable/ic_steam"
+            android:title="@string/nav_download_game" />
     </group>
 
     <!-- 2) On-screen controls: the editor asks which instance when there are several. -->
@@ -16,22 +20,26 @@
             android:icon="@drawable/mt_icon_tune"
             android:title="@string/edit_controls" />
     </group>
-    <!-- 3) Settings -->
+    <!-- 3) Settings, and moving saves / game settings in and out -->
     <group android:id="@+id/group_data" android:checkableBehavior="none">
         <item
             android:id="@+id/action_settings"
             android:icon="@drawable/mt_icon_settings"
             android:title="@string/nav_settings" />
+        <item
+            android:id="@+id/action_saves_transfer"
+            android:icon="@drawable/mt_icon_save"
+            android:title="@string/nav_saves_transfer" />
+        <item
+            android:id="@+id/action_settings_transfer"
+            android:icon="@drawable/mt_icon_tune"
+            android:title="@string/nav_settings_transfer" />
     </group>
 
-    <!-- 4) Diagnostics -->
+    <!-- 4) Diagnostics: the bug report screen sends the logs by email or saves them to a file -->
     <group android:id="@+id/group_files" android:checkableBehavior="none">
         <!-- "Manage storage" lives on each instance card's own menu (menu_game_instance.xml), where
              it acts on that instance — a global duplicate only made this drawer longer. -->
-        <item
-            android:id="@+id/action_export_logs"
-            android:icon="@drawable/mt_icon_logfile"
-            android:title="@string/nav_export_logs" />
         <item
             android:id="@+id/action_bug_report"
             android:icon="@drawable/ic_bug_report"

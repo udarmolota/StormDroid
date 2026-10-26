@@ -11,12 +11,14 @@ public class AppStorage {
     private final String HOME_DIR_PATH;
     private final String CACHE_DIR_PATH;
     private final String LIBRARY_DIR_PATH;
+    private final Context appContext;
     private static AppStorage singleton;
 
     private AppStorage(Context applicationContext) {
         HOME_DIR_PATH    = applicationContext.getFilesDir().getAbsolutePath();
         CACHE_DIR_PATH   = applicationContext.getCacheDir().getAbsolutePath();
         LIBRARY_DIR_PATH = applicationContext.getApplicationInfo().nativeLibraryDir;
+        appContext       = applicationContext;
     }
 
     public static void init(Context applicationContext) {
@@ -49,6 +51,22 @@ public class AppStorage {
 
     public File getInstanceDir(String name) {
         return new File(getInstancesDir(), name);
+    }
+
+    /** Public /Download/StormDroid: the games downloaded from Steam (needs All-files access, StorageAccess). */
+    public File getDownloadsDir() {
+        return new File(android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS), "StormDroid");
+    }
+
+    /**
+     * Files written into Downloads through plain paths are unknown to the media index, and the system
+     * file picker lists only what the index knows (ValDroid, 2026-09-21). Asynchronous, best-effort.
+     */
+    public void publishToMediaIndex(File f, String mimeType) {
+        if (f == null || !f.isFile()) return;
+        android.media.MediaScannerConnection.scanFile(appContext,
+                new String[]{ f.getAbsolutePath() }, new String[]{ mimeType }, null);
     }
 
     /** Short default instance name. */

@@ -14,10 +14,19 @@
 #                                   empty Managed/Resources/mscorlib.dll-resources.dat
 #   assets/stormdroid_native/Managed/  UnityEngine*.dll of the 2021.3 Android Mono variation (they replace the
 #                                   game's Windows copies); the input bridge (tools/input_bridge) goes here too.
+#                                   Also the Unix class libraries (mscorlib, System, ...) of the same Mono, see
+#                                   UNIX_BCL below.
+#
+# UNIX_BCL (required): MonoBleedingEdge/lib/mono/unityjit-linux of the Unity 2021.3.45f2 Linux editor
+# (Unity-2021.3.45f2.tar.xz, Editor/Data/MonoBleedingEdge/lib/mono/unityjit-linux). The game ships the Windows
+# builds of these assemblies: on Android Guid.NewGuid() then needs BCrypt.dll, the Input System gets no actions
+# and the game stops at the menu's loading screen. The Unix builds must come from the same Unity version as the
+# runtime: 6000.x ones fail in WeakReference<T>.
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
 PKG=${1:?usage: prepare_unity.sh <android-support.pkg> [<out-dir>]}
+BCL=${UNIX_BCL:?set UNIX_BCL to the unityjit-linux dir of the Unity 2021.3.45f2 Linux editor}
 OUT=${2:-$ROOT/unity/prepared}
 PY=${PYTHON:-python}
 XAR=$HERE/xar_extract.py
@@ -62,4 +71,14 @@ printf '%s' "8c41f2d7-6b09-4e3a-9f15-2d7a0c5e9b84" > "$DATA/unity_app_guid"
 MANAGED="$OUT/assets/stormdroid_native/Managed"
 mkdir -p "$MANAGED"
 cp "$WORK/Variations/mono/Managed/"UnityEngine*.dll "$MANAGED/"
+# The game's Windows-only class libraries, by name; netstandard and System.Runtime are facades.
+for n in mscorlib Mono.Posix Mono.Security Mono.WebBrowser System System.ComponentModel.Composition \
+    System.Configuration System.Configuration.Install System.Core System.Data System.Data.DataSetExtensions \
+    System.Drawing System.EnterpriseServices System.IO.Compression System.IO.Compression.FileSystem \
+    System.Net.Http System.Numerics System.Runtime.Serialization System.Runtime.Serialization.Formatters.Soap \
+    System.Security System.ServiceModel.Internals System.ServiceProcess System.Transactions \
+    System.Windows.Forms System.Xml System.Xml.Linq; do
+    cp "$BCL/$n.dll" "$MANAGED/"
+done
+cp "$BCL/Facades/netstandard.dll" "$BCL/Facades/System.Runtime.dll" "$MANAGED/"
 echo "prepared $OUT ($(ls "$MANAGED" | wc -l) managed overrides)"

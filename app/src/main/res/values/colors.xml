@@ -1,41 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- StormDroid brand accent: GREEN (the logo's star/robot). Silver = the neutral surfaces below. -->
-    <color name="rd_primary">#2E7D32</color>
-    <color name="rd_primary_dark">#1B5E20</color>
-    <color name="rd_primary_container">#B4F0B6</color>
-    <color name="rd_on_primary_container">#00210A</color>
-    <color name="rd_secondary">#9AA3A0</color>
+    <!-- StormDroid palette, taken from Against the Storm's key art: the storm's misty BLUE (#A8B3ED in the
+         sky and fog) as the main colour, the RED-BROWN of the trees and soil as the accent. Light mode
+         uses a deeper blue so text and icons stay readable on light surfaces. -->
+    <color name="rd_primary">#4E5BA6</color>
+    <color name="rd_primary_dark">#36428D</color>
+    <color name="rd_primary_container">#DDE1FF</color>
+    <color name="rd_on_primary_container">#0A154F</color>
+    <color name="rd_secondary">#8E3F2F</color>
+    <!-- launcher icon background (ic_launcher_background), the same in both modes -->
+    <color name="ic_launcher_bg">#1C2140</color>
 
-    <!-- Material 3 light scheme — cool SILVER-grey neutrals (the logo's metal ring). -->
-    <color name="md_theme_secondary">#4F6354</color>
+    <!-- Material 3 light scheme: secondary = the red-brown accent, cool blue-grey neutrals. -->
+    <color name="md_theme_secondary">#8E3F2F</color>
     <color name="md_theme_onSecondary">#FFFFFF</color>
-    <color name="md_theme_secondaryContainer">#D2E8D6</color>
-    <color name="md_theme_onSecondaryContainer">#0E1F14</color>
-    <color name="md_theme_tertiary">#3A656E</color>
+    <color name="md_theme_secondaryContainer">#FFDAD2</color>
+    <color name="md_theme_onSecondaryContainer">#3A0A03</color>
+    <color name="md_theme_tertiary">#6E5A63</color>
     <color name="md_theme_onTertiary">#FFFFFF</color>
-    <color name="md_theme_tertiaryContainer">#BEEAF5</color>
-    <color name="md_theme_onTertiaryContainer">#001F25</color>
+    <color name="md_theme_tertiaryContainer">#F8DCE6</color>
+    <color name="md_theme_onTertiaryContainer">#271820</color>
     <color name="md_theme_error">#BA1A1A</color>
     <color name="md_theme_onError">#FFFFFF</color>
     <color name="md_theme_errorContainer">#FFDAD6</color>
     <color name="md_theme_onErrorContainer">#410002</color>
-    <color name="md_theme_background">#F5F8F4</color>
-    <color name="md_theme_onBackground">#181D18</color>
-    <color name="md_theme_surface">#F5F8F4</color>
-    <color name="md_theme_onSurface">#181D18</color>
-    <color name="md_theme_surfaceVariant">#DCE5DC</color>
-    <color name="md_theme_onSurfaceVariant">#414942</color>
-    <color name="md_theme_outline">#717971</color>
-    <color name="md_theme_outlineVariant">#C0C9C0</color>
-    <color name="md_theme_inverseSurface">#2D322E</color>
-    <color name="md_theme_inverseOnSurface">#EFF1EB</color>
-    <color name="md_theme_inversePrimary">#86D88A</color>
-    <color name="md_theme_surfaceDim">#D5DBD3</color>
-    <color name="md_theme_surfaceBright">#F5F8F4</color>
+    <color name="md_theme_background">#F8F8FF</color>
+    <color name="md_theme_onBackground">#1A1B23</color>
+    <color name="md_theme_surface">#F8F8FF</color>
+    <color name="md_theme_onSurface">#1A1B23</color>
+    <color name="md_theme_surfaceVariant">#E1E1F0</color>
+    <color name="md_theme_onSurfaceVariant">#45464F</color>
+    <color name="md_theme_outline">#767680</color>
+    <color name="md_theme_outlineVariant">#C6C5D0</color>
+    <color name="md_theme_inverseSurface">#2F3038</color>
+    <color name="md_theme_inverseOnSurface">#F1EFFA</color>
+    <color name="md_theme_inversePrimary">#A8B3ED</color>
+    <color name="md_theme_surfaceDim">#D9D9E4</color>
+    <color name="md_theme_surfaceBright">#F8F8FF</color>
     <color name="md_theme_surfaceContainerLowest">#FFFFFF</color>
-    <color name="md_theme_surfaceContainerLow">#EFF2EC</color>
-    <color name="md_theme_surfaceContainer">#E9ECE6</color>
-    <color name="md_theme_surfaceContainerHigh">#E4E7E1</color>
-    <color name="md_theme_surfaceContainerHighest">#DEE1DB</color>
+    <color name="md_theme_surfaceContainerLow">#F2F2FC</color>
+    <color name="md_theme_surfaceContainer">#ECECF6</color>
+    <color name="md_theme_surfaceContainerHigh">#E6E6F0</color>
+    <color name="md_theme_surfaceContainerHighest">#E1E1EB</color>
 </resources>

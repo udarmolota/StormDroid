@@ -33,7 +33,6 @@
     <string name="render_res_fullscreen">весь экран</string>
     <string name="render_res_black_margins">чёрные поля</string>
     <string name="render_res_hint">Ниже = больше FPS на слабых GPU. Родное = чётче всего. Интерфейс игры остаётся того же размера; его меняют в видеонастройках самой игры (размер интерфейса).</string>
-    <string name="nav_export_logs">Экспорт логов (ZIP)</string>
     <string name="nav_updates">Новые версии (GitHub)</string>
     <string name="nav_bug_report">Сообщить об ошибке</string>
     <string name="launcher_empty_title">С чего начать</string>
@@ -41,7 +40,6 @@
     <string name="nav_label_donate">Донат</string>
     <string name="bug_report_subject">STORMDROID REPORT %1$s</string>
     <string name="bug_report_body">Hi, I have a new bug report.\n\nDescription: \n\n\n---\n%1$s</string>
-    <string name="bug_report_no_mail">На устройстве нет почтового приложения.</string>
     <string name="donate_title">Поддержать разработку</string>
     <string name="donate_message">Нравится StormDroid и хочешь поддержать?\n\nДелаю и поддерживаю: ko-fi.com/udarmolota\n\nЛюбая помощь помогает продолжать работу. Спасибо! ❤</string>
     <string name="edit_controls">Редактировать экранные кнопки</string>
@@ -154,7 +152,66 @@
     <string name="editor_grid_on">Сетка: вкл</string>
     <string name="launch_starting">Запуск игры…</string>
     <string name="launch_preparing_title">Подготовка к запуску</string>
-    <string name="launch_preparing_message">Готовим игру к запуску… Первый запуск после установки или обновления может занять до минуты.</string>
+    <string name="launch_preparing_message">Подготовка к запуску игры. Первый запуск конвертирует шейдеры.</string>
     <string name="editor_layout_classic">Классическая</string>
     <string name="controls_editor_classic_loaded">Классическая раскладка загружена</string>
+    <string name="nav_saves_transfer">Импорт/экспорт сейвов</string>
+    <string name="nav_settings_transfer">Импорт/экспорт настроек</string>
+    <string name="transfer_instance">Инстанс</string>
+    <string name="transfer_no_instances">Инстансов пока нет</string>
+    <string name="transfer_import">Импорт</string>
+    <string name="transfer_export">Экспорт</string>
+    <string name="saves_transfer_import_title">Импорт сейвов</string>
+    <string name="saves_transfer_import_hint" formatted="false">ZIP с сейвами Against the Storm (файлы *.save): экспорт из StormDroid или запакованная папка с ПК %USERPROFILE%\\AppData\\LocalLow\\Eremite Games\\Against the Storm. Текущие сейвы сначала сохраняются в резервную копию рядом с инстансом.</string>
+    <string name="saves_transfer_export_title">Экспорт сейвов</string>
+    <string name="saves_transfer_export_hint" formatted="false">Сохраняет сейвы этого инстанса в ZIP. На ПК распакуйте его в %USERPROFILE%\\AppData\\LocalLow\\Eremite Games\\Against the Storm, пока игра закрыта.</string>
+    <string name="settings_transfer_import_title">Импорт настроек игры</string>
+    <string name="settings_transfer_import_hint">ZIP с настройками игры, экспортированный из StormDroid на другом телефоне: графика, звук, камера, клавиши, язык. Сначала закройте игру.</string>
+    <string name="settings_transfer_export_title">Экспорт настроек игры</string>
+    <string name="settings_transfer_export_hint">Сохраняет настройки игры в ZIP, чтобы перенести их на другой телефон. Версия для ПК хранит настройки в реестре Windows, поэтому между ПК и телефоном они не переносятся.</string>
+    <string name="saves_transfer_import_confirm">Заменить сейвы %2$s сейвами из %1$s? Текущие сейвы сначала сохранятся в резервную копию рядом с инстансом.</string>
+    <string name="settings_transfer_import_confirm">Заменить настройки игры настройками из %1$s?</string>
+    <string name="transfer_imported">Импортировано (файлов: %1$d)</string>
+    <string name="transfer_import_failed">Импорт не удался: %1$s</string>
+    <string name="transfer_exported">Экспортировано файлов: %1$d (%2$d КБ)</string>
+    <string name="transfer_export_failed">Экспорт не удался: %1$s</string>
+    <string name="bug_report_intro">Что-то пошло не так? Пришлите нам отчёт. В нём логи игры, по ним мы увидим, что случилось.</string>
+    <string name="bug_report_group_email">Отправить по почте</string>
+    <string name="bug_report_steps">1. Выберите игру выше.\n2. Нажмите «Отправить по почте».\n3. В открывшемся списке выберите почтовое приложение (Gmail, Outlook…).\n4. Напишите пару слов о том, что случилось, и отправьте.</string>
+    <string name="bug_report_send_email">Отправить по почте</string>
+    <string name="bug_report_no_email_title">На устройстве нет почты?</string>
+    <string name="bug_report_no_email_text">Сохраните отчёт в файл и отправьте его с любого устройства на этот адрес. Приложите файл и напишите пару слов о том, что случилось.</string>
+    <string name="bug_report_copy">Копировать</string>
+    <string name="bug_report_save_file">Сохранить отчёт в файл</string>
+    <string name="bug_report_copied">Адрес скопирован</string>
+    <string name="bug_report_pick_instance">К какой игре относится этот отчёт?</string>
+    <string name="bug_report_preparing">Подготовка отчёта об ошибке…</string>
+    <string name="bug_report_pick_mail">Отправить через</string>
+    <string name="bug_report_no_mail_use_file">На устройстве нет почтового приложения. Сохраните отчёт в файл и отправьте с другого устройства.</string>
+    <string name="bug_report_saved">Отчёт сохранён</string>
+    <string name="bug_report_save_failed">Не удалось сохранить отчёт: %1$s</string>
+    <string name="news_title">Новости Against the Storm</string>
+    <string name="nav_download_game">Скачать из Steam</string>
+    <string name="download_game_title">Скачивание Against the Storm из Steam</string>
+    <string name="download_login_note">Логин отправляется в Steam (так же, как это делает DepotDownloader) и НЕ сохраняется. Подтвердите вход в приложении Steam Mobile или введите код Steam Guard, когда попросят. Игра должна быть на этом аккаунте Steam.</string>
+    <string name="download_user_hint">Логин Steam</string>
+    <string name="download_pass_hint">Пароль Steam</string>
+    <string name="download_manifest_hint">Дополнительно: Manifest ID (пусто = последняя версия)</string>
+    <string name="download_start">Скачать</string>
+    <string name="download_cancel">Отменить скачивание</string>
+    <string name="download_cancel_confirm">Отменить текущее скачивание? Если скачать снова, загрузка продолжится с того места, где остановилась.</string>
+    <string name="download_required">Обязательное поле</string>
+    <string name="download_space_note">Во время скачивания игра занимает около 7 ГБ, затем она упаковывается в ZIP в папке Download/StormDroid (ненадолго нужно ещё несколько ГБ). Не переключайте сеть, пока идёт скачивание.</string>
+    <string name="download_guard_title">Введите код Steam Guard</string>
+    <string name="download_guard_wrong">Неверный код, попробуйте ещё раз</string>
+    <string name="download_guard_hint">Код Steam Guard</string>
+    <string name="download_guard_email_hint">Код отправлен на %1$s</string>
+    <string name="nav_header_subtitle">Against the Storm на Android</string>
+    <string name="download_storage_title">Нужен доступ к файлам</string>
+    <string name="download_storage_message">Игра сохраняется ZIP-архивом в общую папку Download/StormDroid, чтобы его можно было видеть, хранить и использовать снова. Разрешите StormDroid «Доступ ко всем файлам» и снова нажмите «Скачать».</string>
+    <string name="download_storage_grant">Разрешить</string>
+    <string name="download_create_instance">Создать инстанс из %1$s</string>
+    <string name="install_starting">Запуск…</string>
+    <string name="install_copying">Копирование архива… %1$d%% (%2$d / %3$d МБ)</string>
+    <string name="install_extracting">Распаковка игры… %1$d%% (%2$d / %3$d МБ)</string>
 </resources>
