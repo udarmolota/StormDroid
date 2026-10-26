@@ -79,7 +79,11 @@ public class InstallerService extends Service {
                     case TASK_INSTALL_INSTANCE: {
                         String zipPath      = intent.getStringExtra(EXTRA_ZIP_PATH);
                         String instanceName = intent.getStringExtra(EXTRA_INSTANCE_NAME);
-                        installInstance(zipPath, instanceName);
+                        try {
+                            installInstance(zipPath, instanceName);
+                        } finally {
+                            deleteIfCacheCopy(zipPath);
+                        }
                         break;
                     }
                 }
@@ -97,6 +101,17 @@ public class InstallerService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) { return null; }
+
+    /**
+     * The picked archive's copy in the app cache (NewInstanceFragment) is ours and 4-5 GB nobody needs once
+     * the install is over, whatever its outcome. An archive elsewhere (the Steam download) is the user's.
+     */
+    private void deleteIfCacheCopy(String zipPath) {
+        if (zipPath == null) return;
+        File zip = new File(zipPath);
+        if (getCacheDir().equals(zip.getParentFile()) && zip.isFile() && !zip.delete())
+            Log.w(TAG, "cannot delete " + zip);
+    }
 
     // =========================================================================
     // INSTALL INSTANCE FROM ZIP

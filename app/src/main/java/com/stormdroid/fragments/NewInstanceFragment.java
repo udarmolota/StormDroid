@@ -225,8 +225,8 @@ public class NewInstanceFragment extends Fragment {
             return;
         }
         new Thread(() -> {
+            File cacheZip = new File(appCtx.getCacheDir(), "instance.zip");
             try {
-                File cacheZip = new File(appCtx.getCacheDir(), "instance.zip");
                 long size = documentSize(appCtx, selectedZipUri);
                 try (InputStream in = appCtx.getContentResolver()
                         .openInputStream(selectedZipUri);
@@ -249,6 +249,8 @@ public class NewInstanceFragment extends Fragment {
                 }
                 InstallerService.startInstallInstance(appCtx, cacheZip.getAbsolutePath(), instanceName);
             } catch (Exception e) {
+                // A half-written copy is gigabytes of nothing; the installer never saw it.
+                cacheZip.delete();
                 mainHandler.post(() -> {
                     if (!isAdded() || getView() == null) return;
                     btnInstall.setEnabled(true);
