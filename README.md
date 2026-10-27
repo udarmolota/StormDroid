@@ -16,6 +16,14 @@ ARM64 Android player, with nothing emulated.
 
 Unofficial; not endorsed by Eremite Games. The user supplies their own copy of the game.
 
+## Roadmap
+
+- **Mali GPUs** (Exynos, MediaTek, Tensor). The game's textures are BC-compressed, which Mali cannot sample;
+  they need transcoding for those phones. For now StormDroid needs a Snapdragon (Adreno) GPU.
+- **Cloud saves**: Steam Cloud sync, so a settlement moves between PC and phone without manual export.
+- **GOG download**, next to the Steam one. **Epic Games Store** download maybe later (the game is sold there too).
+- **Optimization**: frame rate, loading times, battery and heat.
+
 ## Layout
 
 | Path | What |
@@ -29,19 +37,27 @@ Unofficial; not endorsed by Eremite Games. The user supplies their own copy of t
 ## Building
 
 1. Download Unity's *Android Support for Editor 2021.3.45f2* package (`UnitySetup-Android-Support-for-Editor-2021.3.45f2.pkg`)
-   and run `sh tools/unity/prepare_unity.sh <that .pkg>` (Python 3 and Windows' `tar.exe`, or set `TAR` and `PYTHON`).
+   and run `UNIX_BCL=<unityjit-linux> sh tools/unity/prepare_unity.sh <that .pkg>` (Python 3 and Windows' `tar.exe`,
+   or set `TAR` and `PYTHON`). `UNIX_BCL` is `Editor/Data/MonoBleedingEdge/lib/mono/unityjit-linux` of the Unity
+   2021.3.45f2 Linux editor (`Unity-2021.3.45f2.tar.xz`): the Unix class libraries that replace the game's
+   Windows ones.
 2. Build the input bridge into the prepared set:
    `sh tools/input_bridge/build_input_bridge.sh unity/prepared/assets/stormdroid_native/Managed <game>/Against\ the\ Storm_Data/Managed <unity-2021.3-mono-bcl> unity/prepared/assets/stormdroid_native/Managed`
    (the BCL is the `unityjit-linux` class library folder of a Unity 2021.3.45f2 editor).
-3. `local.properties` needs `sdk.dir`; `unityPrepared=<folder>` selects another prepared set.
-4. Build with Android Studio or `gradlew assembleDebug`.
+3. Put `libshaderdroid.so` (arm64, from the ShaderDroid repository, closed source) into
+   `app/src/main/jniLibs/arm64-v8a/`. It is git-ignored.
+4. `local.properties` needs `sdk.dir`; `unityPrepared=<folder>` selects another prepared set.
+5. Build with Android Studio or `gradlew assembleDebug`. A release build is signed with the key that
+   `keystore.properties` names (copy `keystore.properties.example`; never committed), else with the debug key.
 
 ## The game's files
 
-The instance is the game folder as a PC install has it (`Against the Storm.exe`, `Against the Storm_Data`).
-For now its preparation for Android is done on a PC:
+The instance is the game folder as a PC install has it (`Against the Storm.exe`, `Against the Storm_Data`),
+installed from a ZIP: one the in-app Steam download made, or the player's own. Everything Android needs is done
+on the phone:
 
-- shaders retargeted to Vulkan with the D3D11 programs dropped;
-- `Managed/` given Unity 2021.3's Mono class libraries in place of the Windows ones.
-
-Moving both steps into the launcher (on the phone, at install time) is the next stage.
+- **Shaders.** Before the first launch, ShaderDroid retargets the game's Direct3D 11 shaders to Vulkan (SPIR-V)
+  in place, once per instance (a `.shaderdroid` marker in the data folder).
+- **Class libraries.** The game's `Managed/` keeps its Windows `mscorlib`, `System*` and friends; the APK's
+  managed overrides (`stormdroid_native/Managed`) carry Unity 2021.3's Unix builds of them, which Mono loads
+  first.
