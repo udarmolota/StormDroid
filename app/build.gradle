@@ -2,6 +2,13 @@ plugins {
     id 'com.android.application'
 }
 
+// Release signing key: keystore.properties in the project root, never committed (see .gitignore and
+// keystore.properties.example). Without it a release build stays debug-signed for the test cycle.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.isFile()) keystorePropsFile.withInputStream { keystoreProps.load(it) }
+def hasReleaseKey = keystoreProps.getProperty('storeFile') as boolean
+
 android {
     namespace 'com.stormdroid'
     compileSdk 36
@@ -25,12 +32,27 @@ android {
         buildConfig true   // expose BuildConfig.VERSION_NAME/CODE (used in the launch-config log)
     }
 
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                def store = keystoreProps.getProperty('storeFile')
+                storeFile file(store)
+                storePassword keystoreProps.getProperty('storePassword')
+                keyAlias keystoreProps.getProperty('keyAlias')
+                keyPassword keystoreProps.getProperty('keyPassword')
+                // A .p12 is a PKCS12 store; anything else is left to the default (JKS).
+                def type = keystoreProps.getProperty('storeType') ?: (store.toLowerCase().endsWith('.p12') ? 'pkcs12' : null)
+                if (type) storeType type
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
-            // Test-cycle convenience: debug-signed release so adb install -r replaces the
-            // debug build without wiping app data. Real distribution re-signs anyway.
-            signingConfig signingConfigs.debug
+            // The author's key when keystore.properties is present. Otherwise debug-signed, a
+            // test-cycle convenience: adb install -r then replaces the debug build without wiping app data.
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
         }
         debug {
             jniDebuggable true

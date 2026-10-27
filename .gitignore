@@ -15,6 +15,12 @@ app/build
 .cxx
 local.properties
 
+# Release signing: the key's path and passwords stay on the author's machine (keystore.properties.example)
+/keystore.properties
+*.p12
+*.jks
+*.keystore
+
 # Local scratch / debugging artifacts (not part of the project)
 _*
 
