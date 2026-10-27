@@ -1,12 +1,7 @@
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/.idea/
 .DS_Store
 /build
 app/build
@@ -15,7 +10,7 @@ app/build
 .cxx
 local.properties
 
-# Release signing: the key's path and passwords stay on the author's machine (keystore.properties.example)
+# Release signing: the key's path and passwords stay on the author's machine (keystore.properties)
 /keystore.properties
 *.p12
 *.jks
