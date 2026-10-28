@@ -22,7 +22,12 @@ import java.util.zip.ZipOutputStream;
  */
 public final class LogExporter {
 
-    /** Ship only this much of the end of the game's log (a long session is mostly frames; the end has the crash). */
+    /**
+     * A long game log ships as its start and its end. The start has the launch config, the GPU, its
+     * driver and texture formats, and whether BC textures are converted (vkshim); the end has the
+     * crash. A driver repeating one error can fill the middle within a minute.
+     */
+    private static final long NATIVE_LOG_HEAD_BYTES = 1L * 1024 * 1024;
     private static final long NATIVE_LOG_TAIL_BYTES = 2L * 1024 * 1024;
 
     private LogExporter() {}
@@ -57,20 +62,21 @@ public final class LogExporter {
                 if (f == null || !f.isFile()) continue;
                 zos.putNextEntry(new ZipEntry(f.getName()));
                 try (FileInputStream in = new FileInputStream(f)) {
-                    long cap = f.getName().startsWith("native_engine") ? NATIVE_LOG_TAIL_BYTES : Long.MAX_VALUE;
-                    if (f.length() > cap) {
-                        long skip = f.length() - cap;
+                    boolean gameLog = f.getName().startsWith("native_engine") && f.getName().endsWith(".log");
+                    long length = f.length();
+                    if (gameLog && length > NATIVE_LOG_HEAD_BYTES + NATIVE_LOG_TAIL_BYTES) {
+                        r.bytes += copy(in, zos, buf, NATIVE_LOG_HEAD_BYTES);
+                        long skip = length - NATIVE_LOG_HEAD_BYTES - NATIVE_LOG_TAIL_BYTES;
+                        byte[] mark = ("\n... [" + (skip >> 10) + " KB of the log skipped] ...\n")
+                                .getBytes(StandardCharsets.UTF_8);
+                        zos.write(mark);
                         while (skip > 0) {
                             long s = in.skip(skip);
                             if (s <= 0) break;
                             skip -= s;
                         }
                     }
-                    int n;
-                    while ((n = in.read(buf)) > 0) {
-                        zos.write(buf, 0, n);
-                        r.bytes += n;
-                    }
+                    r.bytes += copy(in, zos, buf, Long.MAX_VALUE);
                 }
                 zos.closeEntry();
                 r.items.add(f.getName());
@@ -83,6 +89,17 @@ public final class LogExporter {
         }
         if (r.items.isEmpty()) r.error = "No logs found yet (run the game first).";
         return r;
+    }
+
+    /** Copies up to max bytes of in into zos; returns how many. */
+    private static long copy(InputStream in, ZipOutputStream zos, byte[] buf, long max) throws java.io.IOException {
+        long done = 0;
+        int n;
+        while (done < max && (n = in.read(buf, 0, (int) Math.min(buf.length, max - done))) > 0) {
+            zos.write(buf, 0, n);
+            done += n;
+        }
+        return done;
     }
 
     /**

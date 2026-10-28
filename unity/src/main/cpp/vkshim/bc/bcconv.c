@@ -357,7 +357,7 @@ static unsigned g_job_count, g_job_cap;
 static Relay* g_relays;
 static unsigned g_relay_count, g_relay_cap;
 static unsigned g_image_count, g_no_encoder, g_unmapped, g_regions, g_relayed;
-static uint64_t g_bytes, g_nanos, g_last_summary_ns;
+static uint64_t g_bytes, g_nanos, g_last_logged;
 
 static uint64_t now_ns(void)
 {
@@ -493,16 +493,22 @@ static int job_cmp(const void* a, const void* b)
     return x < y ? -1 : x > y;
 }
 
-static void summary(void)   // g_mu held
+// The totals, when they changed since the last time (vkshim's watchdog asks every 10 seconds).
+void bcconv_log_summary(void)
 {
-    uint64_t t = now_ns();
-    if (t - g_last_summary_ns < 10000000000ull)
+    if (atomic_load(&g_conv) != 1)
         return;
-    g_last_summary_ns = t;
-    LOG("BC conversion: %u textures created as ETC2/EAC, %u regions / %llu MB re-encoded in %llu ms (%u relayed "
-        "through a GPU buffer); %u from unmapped buffers (left BC), %u without an encoder", g_image_count, g_regions,
-        (unsigned long long)(g_bytes >> 20), (unsigned long long)(g_nanos / 1000000), g_relayed, g_unmapped,
-        g_no_encoder);
+    pthread_mutex_lock(&g_mu);
+    uint64_t now = g_bytes + g_image_count + g_unmapped + g_no_encoder;
+    if (now != g_last_logged)
+    {
+        g_last_logged = now;
+        LOG("BC conversion: %u textures created as ETC2/EAC, %u regions / %llu MB re-encoded in %llu ms (%u relayed "
+            "through a GPU buffer); %u from unmapped buffers (left BC), %u without an encoder", g_image_count,
+            g_regions, (unsigned long long)(g_bytes >> 20), (unsigned long long)(g_nanos / 1000000), g_relayed,
+            g_unmapped, g_no_encoder);
+    }
+    pthread_mutex_unlock(&g_mu);
 }
 
 void bcconv_before_submit(const VkCommandBuffer* cbs, uint32_t n)
@@ -575,7 +581,6 @@ void bcconv_before_submit(const VkCommandBuffer* cbs, uint32_t n)
     g_regions += count;
     g_bytes += bytes;
     g_nanos += took;
-    summary();
     pthread_mutex_unlock(&g_mu);
     free(todo);
 }

@@ -52,6 +52,7 @@ static PFN_vkGetPhysicalDeviceFeatures real_gpu_features;
 static PFN_vkGetPhysicalDeviceFormatProperties real_format_props;
 static PFN_vkGetPhysicalDeviceProperties real_gpu_props;
 static PFN_vkGetPhysicalDeviceProperties2 real_gpu_props2;
+static PFN_vkGetPhysicalDeviceMemoryProperties real_memory_props;
 
 // Device-level calls, per device. A queue shares its device's dispatch table, so the first word of
 // either handle finds the entry.
@@ -108,6 +109,7 @@ static void load_real(void)
     real_format_props = (PFN_vkGetPhysicalDeviceFormatProperties)SYM("vkGetPhysicalDeviceFormatProperties");
     real_gpu_props = (PFN_vkGetPhysicalDeviceProperties)SYM("vkGetPhysicalDeviceProperties");
     real_gpu_props2 = (PFN_vkGetPhysicalDeviceProperties2)SYM("vkGetPhysicalDeviceProperties2");
+    real_memory_props = (PFN_vkGetPhysicalDeviceMemoryProperties)SYM("vkGetPhysicalDeviceMemoryProperties");
     DeviceFns* t = &g_trampolines;
     t->create_swapchain = (PFN_vkCreateSwapchainKHR)SYM("vkCreateSwapchainKHR");
     t->destroy_swapchain = (PFN_vkDestroySwapchainKHR)SYM("vkDestroySwapchainKHR");
@@ -399,6 +401,20 @@ static VKAPI_ATTR void VKAPI_CALL shim_DestroyImage(VkDevice device, VkImage ima
 }
 
 // What the GPU can sample and what the engine turned on, once per device.
+// The GPU's memory heaps: on a phone they share the RAM, and a GPU without BC (textures unpacked to RGBA
+// unless converted) is where the game runs out of it first.
+static void log_memory_heaps(VkPhysicalDevice gpu)
+{
+    if (!real_memory_props)
+        return;
+    VkPhysicalDeviceMemoryProperties mem;
+    memset(&mem, 0, sizeof(mem));
+    real_memory_props(gpu, &mem);
+    for (uint32_t i = 0; i < mem.memoryHeapCount; i++)
+        LOG("memory heap %u: %.0f MB%s", i, mem.memoryHeaps[i].size / 1048576.0,
+            (mem.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) ? ", device local" : "");
+}
+
 static void log_texture_compression(VkPhysicalDevice gpu, const VkDeviceCreateInfo* info)
 {
     if (real_gpu_props)
@@ -451,7 +467,9 @@ static void* watchdog(void* arg)
     for (;;)
     {
         sleep(1);
-        if (summaries && ++seconds % 10 == 0)
+        if (++seconds % 10 == 0)
+            bcconv_log_summary();   // the BC conversion's totals, when they changed
+        if (summaries && seconds % 10 == 0)
         {
             pthread_mutex_lock(&g_images_lock);
             bool changed = g_images_changed;
@@ -535,6 +553,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_CreateDevice(VkPhysicalDevice gpu, co
     if (r != VK_SUCCESS)
         return r;
     log_texture_compression(gpu, info);
+    log_memory_heaps(gpu);
     pthread_mutex_lock(&g_devices_lock);
     DeviceFns* f = NULL;
     for (int i = 0; i < MAX_DEVICES && !f; i++)

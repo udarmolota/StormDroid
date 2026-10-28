@@ -88,6 +88,16 @@ public final class NativeEngine {
         return sb.toString().trim();
     }
 
+    /** RAM as the system counts it: total, available now, and the low-memory threshold. */
+    static String deviceRam(Context context) {
+        android.app.ActivityManager am = (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am == null) return "?";
+        android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
+        am.getMemoryInfo(mi);
+        return String.format(java.util.Locale.US, "%.1f GB total, %.1f GB available (low below %.1f GB)",
+                mi.totalMem / 1073741824.0, mi.availMem / 1073741824.0, mi.threshold / 1073741824.0);
+    }
+
     /** Set while a launch is being prepared: the data archive is built in place, one builder at a time. */
     private static final java.util.concurrent.atomic.AtomicBoolean PREPARING = new java.util.concurrent.atomic.AtomicBoolean();
 
@@ -174,6 +184,7 @@ public final class NativeEngine {
                 + "device        : " + android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL
                 + " (Android " + android.os.Build.VERSION.RELEASE + ", API " + android.os.Build.VERSION.SDK_INT + ")\n"
                 + "soc           : " + deviceSoc() + "\n"
+                + "ram           : " + deviceRam(context) + "\n"
                 + "gpu           : " + com.stormdroid.GpuInfo.query().renderer + "\n"
                 + "engine        : native (Unity's Android player, Vulkan; C# on ARM64 Mono)\n"
                 + "vulkan compat : " + vkCompat + " -> no secondary command buffers: " + noSecondary + "\n"

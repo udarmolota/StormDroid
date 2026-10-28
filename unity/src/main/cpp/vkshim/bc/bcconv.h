@@ -36,4 +36,7 @@ void bcconv_destroy_image(VkImage image);
 // Before command buffers go to the GPU: re-encode the blocks their copies into converted images read.
 void bcconv_before_submit(const VkCommandBuffer* cbs, uint32_t n);
 
+// Logs the conversion's totals when they changed since the last call (vkshim's watchdog, every 10 s).
+void bcconv_log_summary(void);
+
 #endif
