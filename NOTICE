@@ -92,6 +92,15 @@ Mono class libraries   MIT License          Copyright (c) .NET Foundation and Co
  not in the repository)                     game's Windows builds of the same assemblies
                                             (tools/unity/prepare_unity.sh)
 
+etcpak                 BSD-3-Clause         Copyright (c) 2013-2022, Bartosz Taudul and contributors;
+(in libvkshim.so)                           github.com/wolfpld/etcpak. ETC2/EAC block encoder for the
+                                            BC texture conversion (unity/src/main/cpp/vkshim/bc/etcpak,
+                                            license in LICENSE.txt there)
+
+bcdec                  MIT License or       Copyright (c) 2022 Sergii Kudlai;
+(in libvkshim.so)      the Unlicense        github.com/iOrange/bcdec. BC block decoder for the same
+                                            conversion (vkshim/bc/etcpak/bcdec.h, license at its end)
+
 libsteam_api64.so      StormDroid original work (GPL-3.0): an ARM64 stub that only exports the
 (arm64 stub)           Steamworks startup function names and answers "Steam is not running";
                        contains no Valve code (unity/src/main/cpp/steam_stub).

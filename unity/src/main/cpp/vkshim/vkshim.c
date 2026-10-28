@@ -31,6 +31,8 @@
 #define VK_USE_PLATFORM_ANDROID_KHR
 #include <vulkan/vulkan.h>
 
+#include "bc/bcconv.h"
+
 #define EXPORT __attribute__((visibility("default")))
 #define LOG(...) __android_log_print(ANDROID_LOG_INFO, "VKSHIM", __VA_ARGS__)
 #define DETAILED_CALLS 6   // full lines for the first calls of each kind per swapchain generation
@@ -123,6 +125,7 @@ static void load_real(void)
     t->destroy_image = (PFN_vkDestroyImage)SYM("vkDestroyImage");
     t->image_requirements = (PFN_vkGetImageMemoryRequirements)SYM("vkGetImageMemoryRequirements");
 #undef SYM
+    bcconv_set_loader(lib);
     LOG("loaded: system libvulkan %p, vkGetInstanceProcAddr %p", lib, (void*)real_gipa);
     atomic_store(&done, true);
 }
@@ -373,7 +376,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_CreateImage(VkDevice device, const Vk
                                                       const VkAllocationCallbacks* alloc, VkImage* image)
 {
     DeviceFns* f = device_fns(device);
-    VkResult r = f->create_image(device, info, alloc, image);
+    VkResult r = bcconv_on() ? bcconv_create_image(f->create_image, device, info, alloc, image)
+                             : f->create_image(device, info, alloc, image);
     if (r == VK_SUCCESS && diag_on() && f->image_requirements)
     {
         VkMemoryRequirements req = { 0 };
@@ -390,6 +394,7 @@ static VKAPI_ATTR void VKAPI_CALL shim_DestroyImage(VkDevice device, VkImage ima
 {
     if (image && diag_on())
         images_remove((uint64_t)image);
+    bcconv_destroy_image(image);
     device_fns(device)->destroy_image(device, image, alloc);
 }
 
@@ -520,7 +525,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_CreateDevice(VkPhysicalDevice gpu, co
                                                        const VkAllocationCallbacks* alloc, VkDevice* device)
 {
     load_real();
-    VkResult r = real_create_device(gpu, info, alloc, device);
+    VkDeviceCreateInfo copy;
+    VkPhysicalDeviceFeatures features;
+    VkResult r = real_create_device(gpu, bcconv_device_info(gpu, info, &copy, &features), alloc, device);
     LOG("vkCreateDevice -> %d, device %p, %u extensions", r, r == VK_SUCCESS ? (void*)*device : NULL,
         info ? info->enabledExtensionCount : 0);
     for (uint32_t i = 0; info && i < info->enabledExtensionCount; i++)
@@ -750,6 +757,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_AcquireNextImage2KHR(VkDevice device,
 
 static VKAPI_ATTR VkResult VKAPI_CALL shim_QueueSubmit(VkQueue queue, uint32_t n, const VkSubmitInfo* submits, VkFence fence)
 {
+    for (uint32_t i = 0; i < n; i++)
+        bcconv_before_submit(submits[i].pCommandBuffers, submits[i].commandBufferCount);
     VkResult r = device_fns(queue)->submit(queue, n, submits, fence);
     count(&c_submit, r);
     if (detailed(&g_detail_submit) || problem(r))
@@ -770,6 +779,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_QueueSubmit(VkQueue queue, uint32_t n
 static VkResult submit2_common(PFN_vkQueueSubmit2 real, const char* name, VkQueue queue, uint32_t n,
                                const VkSubmitInfo2* submits, VkFence fence)
 {
+    for (uint32_t i = 0; i < n; i++)
+        for (uint32_t k = 0; k < submits[i].commandBufferInfoCount; k++)
+            bcconv_before_submit(&submits[i].pCommandBufferInfos[k].commandBuffer, 1);
     VkResult r = real(queue, n, submits, fence);
     count(&c_submit, r);
     if (detailed(&g_detail_submit) || problem(r))
@@ -874,13 +886,17 @@ static const Hook g_device_hooks[] = {
     HOOK("vkDeviceWaitIdle", shim_DeviceWaitIdle),
 };
 
-static PFN_vkVoidFunction device_hook(const char* name)
+static PFN_vkVoidFunction device_hook(const char* name, PFN_vkVoidFunction real)
 {
-    // Images are counted only for a diagnostic run: no wrapper on a call made thousands of times otherwise.
-    if (diag_on() && !strcmp(name, "vkCreateImage"))
+    // Images are wrapped only for a diagnostic run or the BC conversion (bc/bcconv.c): no wrapper on a call
+    // made thousands of times otherwise. The conversion's other calls likewise only while it may be on.
+    if ((diag_on() || bcconv_maybe()) && !strcmp(name, "vkCreateImage"))
         return (PFN_vkVoidFunction)shim_CreateImage;
-    if (diag_on() && !strcmp(name, "vkDestroyImage"))
+    if ((diag_on() || bcconv_maybe()) && !strcmp(name, "vkDestroyImage"))
         return (PFN_vkVoidFunction)shim_DestroyImage;
+    PFN_vkVoidFunction bc = bcconv_device_hook(name, real);
+    if (bc)
+        return bc;
     for (size_t i = 0; i < sizeof(g_device_hooks) / sizeof(g_device_hooks[0]); i++)
         if (!strcmp(name, g_device_hooks[i].name))
             return g_device_hooks[i].fn;
@@ -893,7 +909,7 @@ EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(VkDevice dev
     PFN_vkVoidFunction real = real_gdpa ? real_gdpa(device, name) : NULL;
     if (!real || !name)
         return real;   // a function the device does not have stays unavailable
-    PFN_vkVoidFunction hook = device_hook(name);
+    PFN_vkVoidFunction hook = device_hook(name, real);
     return hook ? hook : real;
 }
 
@@ -917,7 +933,10 @@ EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance
         return (PFN_vkVoidFunction)shim_DestroySurfaceKHR;
     if (!strcmp(name, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"))
         return (PFN_vkVoidFunction)shim_GetPhysicalDeviceSurfaceCapabilitiesKHR;
-    PFN_vkVoidFunction hook = device_hook(name);
+    PFN_vkVoidFunction bc = bcconv_instance_hook(name, real);
+    if (bc)
+        return bc;
+    PFN_vkVoidFunction hook = device_hook(name, real);
     return hook ? hook : real;
 }
 

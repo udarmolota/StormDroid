@@ -47,8 +47,21 @@ endif()
 enable_language(CXX)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/liblinkernsbypass
                  ${CMAKE_CURRENT_BINARY_DIR}/linkernsbypass)
-add_library(vkshim SHARED vkshim/vkshim.c vkshim/driver.c)
-target_compile_options(vkshim PRIVATE -std=c11 -fvisibility=hidden -Wall -Wextra -Wno-unused-parameter)
+# On GPUs without BC it also creates the game's BC textures as ETC2/EAC and re-encodes their blocks
+# (vkshim/bc: bcconv.c, bctranscode.cpp with bcdec (MIT / Unlicense) and etcpak (BSD-3)). Always -O2 there:
+# the block encoder runs while the game loads.
+add_library(vkshim SHARED vkshim/vkshim.c vkshim/driver.c
+    vkshim/bc/bcconv.c
+    vkshim/bc/bctranscode.cpp
+    vkshim/bc/etcpak/ProcessRGB.cpp
+    vkshim/bc/etcpak/Tables.cpp
+    vkshim/bc/etcpak/Dither.cpp)
+target_compile_options(vkshim PRIVATE -fvisibility=hidden -Wall -Wextra -Wno-unused-parameter
+    $<$<COMPILE_LANGUAGE:C>:-std=c11>)
+set_source_files_properties(vkshim/bc/bctranscode.cpp PROPERTIES COMPILE_OPTIONS "-O2;-fno-exceptions;-fno-rtti")
+set_source_files_properties(vkshim/bc/etcpak/ProcessRGB.cpp vkshim/bc/etcpak/Tables.cpp vkshim/bc/etcpak/Dither.cpp
+    PROPERTIES COMPILE_OPTIONS "-O2;-fno-exceptions;-fno-rtti;-w")
+set_source_files_properties(vkshim/bc/bcconv.c PROPERTIES COMPILE_OPTIONS "-O2")
 target_link_libraries(vkshim vulkan log dl linkernsbypass)
 set_target_properties(vkshim PROPERTIES LINKER_LANGUAGE CXX)
 
