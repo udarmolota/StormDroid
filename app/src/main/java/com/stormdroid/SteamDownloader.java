@@ -108,6 +108,12 @@ public class SteamDownloader implements Runnable, Cancellable {
     private static final int MAX_FILE_WORKERS = 6;
     /** Steam's CDN edge nodes 503 under load; retry patiently on another server rather than fail. */
     private static final int MAX_CHUNK_TRIES = 30;
+    /**
+     * One download, packing included, per process: two packs of one build write the same .part file,
+     * and the first to finish deletes the work dir under the other (a tester's report, 2026-10-28).
+     */
+    private static final java.util.concurrent.atomic.AtomicBoolean BUSY =
+            new java.util.concurrent.atomic.AtomicBoolean();
 
     private final String username, password;
     private final String installDir;      // ABSOLUTE work root; each build downloads into <root>/<manifest id>
@@ -170,7 +176,9 @@ public class SteamDownloader implements Runnable, Cancellable {
         Thread w = workerThread;
         if (w != null) w.interrupt();        // break DepotDownloader's awaitCompletion()
         try { if (steamClient != null) steamClient.disconnect(); } catch (Throwable ignored) {}
-        done("Download cancelled.");
+        // A live worker reports the cancel itself once it has stopped (packing deletes its .part
+        // first); until then the screen stays busy, so Download can't start a second one over it.
+        if (w == null || !w.isAlive()) done("Download cancelled.");
     }
 
     @Override
@@ -198,9 +206,15 @@ public class SteamDownloader implements Runnable, Cancellable {
                 manager.runWaitCallbacks(1000L);
             }
             Log.i(TAG, "Spike loop ended");
+            // The download thread can outlive the loop: a connection dropped while packing ends the
+            // loop, but the zip is still being written. The screen stays busy until that thread is done.
+            Thread w = workerThread;
+            if (w != null) {
+                try { w.join(); } catch (InterruptedException ignored) { }
+            }
             // Safety net: never leave the UI stuck in "downloading" if the loop ended without a
             // terminal result (e.g. a disconnect path that set running=false but did not call done()).
-            if (!doneEmitted) done("Stopped before finishing — please try again.");
+            if (!doneEmitted) done(cancelled ? "Download cancelled." : "Stopped before finishing — please try again.");
         } catch (Throwable t) {
             Log.e(TAG, "SteamDownloadSpike crashed", t);
             done("crash: " + t);
@@ -321,6 +335,19 @@ public class SteamDownloader implements Runnable, Cancellable {
     }
 
     private void download() {
+        if (!BUSY.compareAndSet(false, true)) {
+            done("The previous download is still being packed into a zip. Wait for it to finish, then try again.");
+            running = false;
+            return;
+        }
+        try {
+            downloadOnce();
+        } finally {
+            BUSY.set(false);
+        }
+    }
+
+    private void downloadOnce() {
         downloadInProgress = true;
         downloadAttempts++;
         lastError = null;
@@ -675,13 +702,36 @@ public class SteamDownloader implements Runnable, Cancellable {
         try {
             progress("Download finished. Packing it into " + zip.getAbsolutePath()
                     + " (several GB, a few minutes; keep the app open)...");
-            ZipUtil.zipDir(work, part);
+            ZipUtil.zipDir(work, part, new ZipUtil.Progress() {
+                private int lastPct = -1;
+                private long lastEmit;
+
+                @Override
+                public void onBytes(long done, long total) {
+                    int pct = total > 0 ? (int) (done * 100 / total) : 0;
+                    long now = System.currentTimeMillis();
+                    if (pct == lastPct || now - lastEmit < 500) return;
+                    lastPct = pct;
+                    lastEmit = now;
+                    progress("Packing: " + pct + "%  (" + (done / (1024 * 1024)) + " / "
+                            + (total / (1024 * 1024)) + " MB)");
+                    if (listener != null) listener.onPercent(pct);
+                }
+
+                @Override
+                public boolean isCancelled() { return cancelled; }
+            });
             if (zip.exists() && !zip.delete()) throw new java.io.IOException("cannot replace " + zip.getName());
             if (!part.renameTo(zip)) throw new java.io.IOException("cannot rename " + part.getName());
         } catch (Throwable t) {
-            Log.e(TAG, "packing the game failed", t);
             //noinspection ResultOfMethodCallIgnored
             part.delete();
+            if (t instanceof ZipUtil.CancelledException) {
+                // The downloaded files stay: Download again packs them without fetching anything.
+                finish(null, "Download cancelled.");
+                return;
+            }
+            Log.e(TAG, "packing the game failed", t);
             finish(null, "Packing the game failed: " + describe(t));
             return;
         }
