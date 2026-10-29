@@ -42,7 +42,7 @@
          only, like the release notes it is cut from. Read with getText, so <b>/<i> are kept; keep it on
          one line, because a line break inside a string resource turns into a leading space. -->
     <string name="release_notes_title">What\'s new in v%1$s</string>
-    <string name="release_notes_body"><b>– First StormDroid build</b>\nAgainst the Storm\'s Windows version on Unity\'s own Android player: nothing emulated, Vulkan graphics.\n\n<b>– On-screen controls</b>\nGamepad and keyboard + mouse layouts, switched in the controls editor (Layouts). A physical gamepad works as in the game\'s Steam Deck mode.</string>
+    <string name="release_notes_body"><b>– Mali GPUs</b>\nTheir drivers lack the texture format the PC game ships in, so textures are now converted while loading. Untested on real devices yet — reports welcome.\n\n<b>– Steam download fix</b>\nPacking the downloaded game into a zip could fail with \"FileNotFoundException\". Fixed.\n\n<b>– Better bug reports</b>\nThe report now includes your device\'s memory, GPU details and texture conversion stats.</string>
     <!-- Captions shown under each drawer-footer icon. Brand names stay untranslated. -->
     <string name="nav_label_github" translatable="false">GitHub</string>
     <string name="nav_label_donate">Donate</string>
