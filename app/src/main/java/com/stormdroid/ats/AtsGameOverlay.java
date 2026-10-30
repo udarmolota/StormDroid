@@ -138,7 +138,16 @@ public class AtsGameOverlay extends FrameLayout
 
     @Override protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        controls.setGameRect(0, 0, w, h);   // the player fills the screen
+        // The 768-line presets keep the player in a centred box (same sums as NativeUnityActivity):
+        // the cursor is a fraction of that box, or the visible arrow drifts from the real one.
+        float boxAspect = getContext() instanceof Activity
+                ? ((Activity) getContext()).getIntent().getFloatExtra(NativeEngine.EXTRA_BOX_ASPECT, 0f) : 0f;
+        int boxW = w, boxH = h;
+        if (boxAspect > 0f) {
+            boxW = Math.round(h * boxAspect);
+            if (boxW > w) { boxW = w; boxH = Math.round(w / boxAspect); }
+        }
+        controls.setGameRect((w - boxW) / 2, (h - boxH) / 2, boxW, boxH);
     }
 
     // ------------------------------------------------------------------ lifecycle

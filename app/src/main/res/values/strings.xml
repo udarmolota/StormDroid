@@ -27,6 +27,11 @@
     <string name="texq_no">No</string>
     <string name="texq_low">Low</string>
     <string name="texq_ultra">Ultra low</string>
+    <string name="gfx_preset_label">Graphics profile</string>
+    <string name="gfx_preset_hint">Written into the game\'s settings on the next launch. Grey means it is already set; change something in the game and the button comes back, so it also resets to this profile. Very low turns the effects off for weak GPUs.</string>
+    <string name="gfx_preset_low">Low</string>
+    <string name="gfx_preset_very_low">Very low</string>
+    <string name="gfx_preset_pending">%1$s will be set at the next launch</string>
     <string name="fps_cap_30">30 FPS</string>
     <string name="fps_cap_60">60 FPS</string>
     <string name="fps_cap_off">No limit</string>

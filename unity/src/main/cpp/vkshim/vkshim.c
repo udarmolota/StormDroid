@@ -17,6 +17,7 @@
 // turned on: a game built for a PC ships BC textures, which a GPU without BC gets decompressed.
 // Written for the Mali phones where Unity keeps rendering but no frame reaches the screen.
 #include <android/log.h>
+#include <dirent.h>
 #include <dlfcn.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -458,6 +459,238 @@ static void log_texture_compression(VkPhysicalDevice gpu, const VkDeviceCreateIn
         (bc3.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) ? "yes" : "no");
 }
 
+// ------------------------------------------------------------------ performance, every 10 seconds
+// Why a phone runs the game slowly, from a tester's bug report alone. A render thread that spends most
+// of a frame waiting (fences, acquire, present) means the GPU is the limit; little waiting and UnityMain
+// near 100% means the CPU is. Pipelines show shader-compile stalls, the rest shows throttling and memory.
+
+#define PERF_SECONDS 10
+#define PERF_LONG_FRAME_NS 50000000ull
+static _Atomic uint64_t g_perf_frames, g_perf_long_frames, g_perf_worst_ns;
+static _Atomic uint64_t g_perf_fence_ns, g_perf_acquire_ns, g_perf_present_ns;
+static _Atomic uint64_t g_perf_submits, g_perf_draws, g_perf_passes;
+static _Atomic uint64_t g_perf_pipelines, g_perf_pipeline_ns, g_perf_pipeline_fails;
+
+#define PERF_ADD(counter, n) atomic_fetch_add_explicit(&(counter), (n), memory_order_relaxed)
+#define PERF_TAKE(counter) atomic_exchange_explicit(&(counter), 0, memory_order_relaxed)
+
+static void perf_frame(uint64_t t)
+{
+    static _Atomic uint64_t last;
+    uint64_t prev = atomic_exchange_explicit(&last, t, memory_order_relaxed);
+    PERF_ADD(g_perf_frames, 1);
+    if (!prev)
+        return;
+    uint64_t d = t - prev;
+    if (d > PERF_LONG_FRAME_NS)
+        PERF_ADD(g_perf_long_frames, 1);
+    uint64_t worst = atomic_load_explicit(&g_perf_worst_ns, memory_order_relaxed);
+    while (d > worst && !atomic_compare_exchange_weak(&g_perf_worst_ns, &worst, d))
+        ;
+}
+
+// The wrappers count and go straight on to the driver: no lookup, these run thousands of times a frame.
+static PFN_vkCmdDraw real_cmd_draw;
+static PFN_vkCmdDrawIndexed real_cmd_draw_indexed;
+static PFN_vkCmdBeginRenderPass real_cmd_begin_pass;
+static PFN_vkCmdBeginRenderPass2 real_cmd_begin_pass2, real_cmd_begin_pass2khr;
+static PFN_vkCreateGraphicsPipelines real_create_pipelines;
+
+static VKAPI_ATTR void VKAPI_CALL shim_CmdDraw(VkCommandBuffer cb, uint32_t verts, uint32_t insts, uint32_t first,
+                                               uint32_t first_inst)
+{
+    PERF_ADD(g_perf_draws, 1);
+    real_cmd_draw(cb, verts, insts, first, first_inst);
+}
+
+static VKAPI_ATTR void VKAPI_CALL shim_CmdDrawIndexed(VkCommandBuffer cb, uint32_t indices, uint32_t insts, uint32_t first,
+                                                      int32_t offset, uint32_t first_inst)
+{
+    PERF_ADD(g_perf_draws, 1);
+    real_cmd_draw_indexed(cb, indices, insts, first, offset, first_inst);
+}
+
+static VKAPI_ATTR void VKAPI_CALL shim_CmdBeginRenderPass(VkCommandBuffer cb, const VkRenderPassBeginInfo* info,
+                                                          VkSubpassContents contents)
+{
+    PERF_ADD(g_perf_passes, 1);
+    real_cmd_begin_pass(cb, info, contents);
+}
+
+static VKAPI_ATTR void VKAPI_CALL shim_CmdBeginRenderPass2(VkCommandBuffer cb, const VkRenderPassBeginInfo* info,
+                                                           const VkSubpassBeginInfo* sub)
+{
+    PERF_ADD(g_perf_passes, 1);
+    real_cmd_begin_pass2(cb, info, sub);
+}
+
+static VKAPI_ATTR void VKAPI_CALL shim_CmdBeginRenderPass2KHR(VkCommandBuffer cb, const VkRenderPassBeginInfo* info,
+                                                              const VkSubpassBeginInfo* sub)
+{
+    PERF_ADD(g_perf_passes, 1);
+    real_cmd_begin_pass2khr(cb, info, sub);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL shim_CreateGraphicsPipelines(VkDevice device, VkPipelineCache cache, uint32_t n,
+                                                                  const VkGraphicsPipelineCreateInfo* infos,
+                                                                  const VkAllocationCallbacks* alloc, VkPipeline* out)
+{
+    uint64_t t0 = now_ns();
+    VkResult r = real_create_pipelines(device, cache, n, infos, alloc, out);
+    PERF_ADD(g_perf_pipeline_ns, now_ns() - t0);
+    PERF_ADD(g_perf_pipelines, n);
+    if (r != VK_SUCCESS)
+        PERF_ADD(g_perf_pipeline_fails, n);
+    return r;
+}
+
+#define PERF_THREADS 256
+#define PERF_TOP_THREADS 6
+typedef struct
+{
+    int tid;
+    uint32_t generation;
+    uint64_t ticks, delta;
+    char name[20];
+} PerfThread;
+static PerfThread g_threads[PERF_THREADS];
+
+// The CPU time of one thread so far, from /proc/self/task/<tid>/stat; false when it is gone.
+static bool thread_ticks(const char* tid, char* name, size_t name_size, uint64_t* ticks)
+{
+    char path[64], buf[512];
+    snprintf(path, sizeof(path), "/proc/self/task/%s/stat", tid);
+    FILE* f = fopen(path, "r");
+    if (!f)
+        return false;
+    size_t got = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    buf[got] = 0;
+    char* open = strchr(buf, '('), *close = strrchr(buf, ')');   // the name may hold spaces
+    if (!open || !close || close < open)
+        return false;
+    snprintf(name, name_size, "%.*s", (int)(close - open - 1), open + 1);
+    unsigned long long utime, stime;
+    // After the name: state, then 10 fields up to utime and stime.
+    if (sscanf(close + 1, " %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %llu %llu", &utime, &stime) != 2)
+        return false;
+    *ticks = utime + stime;
+    return true;
+}
+
+// The busiest threads since the last call, as a percentage of one core each.
+static void perf_threads(char* out, size_t size)
+{
+    static uint32_t generation;
+    generation++;
+    double scale = 100.0 / ((double)sysconf(_SC_CLK_TCK) * PERF_SECONDS);
+    uint64_t total = 0;
+    DIR* dir = opendir("/proc/self/task");
+    for (struct dirent* e; dir && (e = readdir(dir));)
+    {
+        int tid = atoi(e->d_name);
+        char name[20];
+        uint64_t ticks;
+        if (tid <= 0 || !thread_ticks(e->d_name, name, sizeof(name), &ticks))
+            continue;
+        PerfThread* slot = NULL;
+        for (int i = 0; i < PERF_THREADS && !slot; i++)
+            if (g_threads[i].tid == tid)
+                slot = &g_threads[i];
+        bool known = slot != NULL;
+        for (int i = 0; i < PERF_THREADS && !slot; i++)
+            if (!g_threads[i].tid || g_threads[i].generation + 1 < generation)   // free, or a thread that has ended
+                slot = &g_threads[i];
+        if (!slot)
+            continue;
+        slot->delta = known ? ticks - slot->ticks : ticks;
+        slot->tid = tid;
+        slot->ticks = ticks;
+        slot->generation = generation;
+        snprintf(slot->name, sizeof(slot->name), "%s", name);
+        total += slot->delta;
+    }
+    if (dir)
+        closedir(dir);
+    size_t len = (size_t)snprintf(out, size, "total %.0f%%", (double)total * scale);
+    for (int shown = 0; shown < PERF_TOP_THREADS; shown++)
+    {
+        PerfThread* top = NULL;
+        for (int i = 0; i < PERF_THREADS; i++)
+            if (g_threads[i].generation == generation && g_threads[i].delta && (!top || g_threads[i].delta > top->delta))
+                top = &g_threads[i];
+        if (!top || len >= size)
+            break;
+        len += (size_t)snprintf(out + len, size - len, ", %s %.0f%%", top->name, (double)top->delta * scale);
+        top->delta = 0;
+    }
+}
+
+// One number from a small system file; -1 when the phone does not let us read it.
+static long read_number(const char* path)
+{
+    FILE* f = fopen(path, "r");
+    if (!f)
+        return -1;
+    long v = -1;
+    if (fscanf(f, "%ld", &v) != 1)
+        v = -1;
+    fclose(f);
+    return v;
+}
+
+static long memory_available_mb(void)
+{
+    FILE* f = fopen("/proc/meminfo", "r");
+    if (!f)
+        return -1;
+    char line[128];
+    long kb = -1;
+    while (fgets(line, sizeof(line), f))
+        if (sscanf(line, "MemAvailable: %ld", &kb) == 1)
+            break;
+    fclose(f);
+    return kb < 0 ? -1 : kb / 1024;
+}
+
+static void perf_log(void)
+{
+    uint64_t frames = PERF_TAKE(g_perf_frames), long_frames = PERF_TAKE(g_perf_long_frames);
+    uint64_t worst = PERF_TAKE(g_perf_worst_ns);
+    uint64_t fence = PERF_TAKE(g_perf_fence_ns), acquire = PERF_TAKE(g_perf_acquire_ns);
+    uint64_t present = PERF_TAKE(g_perf_present_ns);
+    uint64_t submits = PERF_TAKE(g_perf_submits), draws = PERF_TAKE(g_perf_draws), passes = PERF_TAKE(g_perf_passes);
+    uint64_t pipelines = PERF_TAKE(g_perf_pipelines), pipeline_ns = PERF_TAKE(g_perf_pipeline_ns);
+    uint64_t pipeline_fails = PERF_TAKE(g_perf_pipeline_fails);
+    char threads[256];
+    perf_threads(threads, sizeof(threads));   // every time, so the next delta spans one period
+    if (!frames)
+        return;   // the game in the background
+    double per_frame_ms = 1.0 / (1000000.0 * (double)frames);
+    LOG("perf: %.1f fps, frame %.1f ms, worst %llu ms, %llu over 50 ms | waiting per frame: fences %.1f, acquire %.1f,"
+        " present %.1f ms | per frame: %llu draws, %llu render passes, %llu submits | pipelines +%llu in %llu ms, %llu failed",
+        (double)frames / PERF_SECONDS, 1000.0 * PERF_SECONDS / (double)frames, (unsigned long long)(worst / 1000000),
+        (unsigned long long)long_frames, (double)fence * per_frame_ms, (double)acquire * per_frame_ms,
+        (double)present * per_frame_ms, (unsigned long long)(draws / frames), (unsigned long long)(passes / frames),
+        (unsigned long long)(submits / frames), (unsigned long long)pipelines,
+        (unsigned long long)(pipeline_ns / 1000000), (unsigned long long)pipeline_fails);
+    long pages = 0;
+    FILE* statm = fopen("/proc/self/statm", "r");
+    if (statm)
+    {
+        if (fscanf(statm, "%*d %ld", &pages) != 1)
+            pages = 0;
+        fclose(statm);
+    }
+    LOG("perf: cpu %s | MHz cpu0 %ld of %ld, cpu7 %ld of %ld | temp %ld | rss %ld MB, available %ld MB", threads,
+        read_number("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq") / 1000,
+        read_number("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq") / 1000,
+        read_number("/sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq") / 1000,
+        read_number("/sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq") / 1000,
+        read_number("/sys/class/thermal/thermal_zone0/temp"), pages * (sysconf(_SC_PAGESIZE) / 1024) / 1024,
+        memory_available_mb());
+}
+
 static void* watchdog(void* arg)
 {
     bool summaries = diag_on();
@@ -467,8 +700,11 @@ static void* watchdog(void* arg)
     for (;;)
     {
         sleep(1);
-        if (++seconds % 10 == 0)
+        if (++seconds % PERF_SECONDS == 0)
+        {
             bcconv_log_summary();   // the BC conversion's totals, when they changed
+            perf_log();
+        }
         if (summaries && seconds % 10 == 0)
         {
             pthread_mutex_lock(&g_images_lock);
@@ -747,6 +983,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_AcquireNextImageKHR(VkDevice device, 
     Slot* s = enter("vkAcquireNextImageKHR");
     uint64_t t0 = now_ns();
     VkResult r = device_fns(device)->acquire(device, swapchain, timeout, semaphore, fence, index);
+    PERF_ADD(g_perf_acquire_ns, now_ns() - t0);
     uint64_t ms = (now_ns() - t0) / 1000000;
     leave(s);
     count(&c_acquire, r);
@@ -764,6 +1001,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_AcquireNextImage2KHR(VkDevice device,
     Slot* s = enter("vkAcquireNextImage2KHR");
     uint64_t t0 = now_ns();
     VkResult r = device_fns(device)->acquire2(device, info, index);
+    PERF_ADD(g_perf_acquire_ns, now_ns() - t0);
     uint64_t ms = (now_ns() - t0) / 1000000;
     leave(s);
     count(&c_acquire, r);
@@ -779,6 +1017,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_QueueSubmit(VkQueue queue, uint32_t n
     for (uint32_t i = 0; i < n; i++)
         bcconv_before_submit(submits[i].pCommandBuffers, submits[i].commandBufferCount);
     VkResult r = device_fns(queue)->submit(queue, n, submits, fence);
+    PERF_ADD(g_perf_submits, 1);
     count(&c_submit, r);
     if (detailed(&g_detail_submit) || problem(r))
     {
@@ -802,6 +1041,7 @@ static VkResult submit2_common(PFN_vkQueueSubmit2 real, const char* name, VkQueu
         for (uint32_t k = 0; k < submits[i].commandBufferInfoCount; k++)
             bcconv_before_submit(&submits[i].pCommandBufferInfos[k].commandBuffer, 1);
     VkResult r = real(queue, n, submits, fence);
+    PERF_ADD(g_perf_submits, 1);
     count(&c_submit, r);
     if (detailed(&g_detail_submit) || problem(r))
         LOG("%s(queue %p, %u submits, fence 0x%llx) -> %d", name, (void*)queue, n, (unsigned long long)fence, r);
@@ -832,7 +1072,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_QueuePresentKHR(VkQueue queue, const 
     uint64_t t0 = now_ns();
     VkResult r = device_fns(queue)->present(queue, info);
     atomic_fetch_add_explicit(&g_frames_presented, 1, memory_order_relaxed);
-    uint64_t ms = (now_ns() - t0) / 1000000;
+    uint64_t t1 = now_ns();
+    PERF_ADD(g_perf_present_ns, t1 - t0);
+    perf_frame(t1);
+    uint64_t ms = (t1 - t0) / 1000000;
     leave(s);
     count(&c_present, r);
     bool per_swapchain_problem = false;
@@ -853,7 +1096,9 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_WaitForFences(VkDevice device, uint32
                                                         VkBool32 all, uint64_t timeout)
 {
     Slot* s = enter("vkWaitForFences");
+    uint64_t t0 = now_ns();
     VkResult r = device_fns(device)->wait_fences(device, n, fences, all, timeout);
+    PERF_ADD(g_perf_fence_ns, now_ns() - t0);
     leave(s);
     count(&c_wait, r);
     if (r != VK_SUCCESS && r != VK_TIMEOUT && problem(r))
@@ -916,6 +1161,19 @@ static PFN_vkVoidFunction device_hook(const char* name, PFN_vkVoidFunction real)
     PFN_vkVoidFunction bc = bcconv_device_hook(name, real);
     if (bc)
         return bc;
+#define PERF_HOOK(vk_name, real_ptr, wrapper) \
+    if (!strcmp(name, vk_name)) \
+    { \
+        real_ptr = (void*)real; \
+        return (PFN_vkVoidFunction)wrapper; \
+    }
+    PERF_HOOK("vkCmdDraw", real_cmd_draw, shim_CmdDraw)
+    PERF_HOOK("vkCmdDrawIndexed", real_cmd_draw_indexed, shim_CmdDrawIndexed)
+    PERF_HOOK("vkCmdBeginRenderPass", real_cmd_begin_pass, shim_CmdBeginRenderPass)
+    PERF_HOOK("vkCmdBeginRenderPass2", real_cmd_begin_pass2, shim_CmdBeginRenderPass2)
+    PERF_HOOK("vkCmdBeginRenderPass2KHR", real_cmd_begin_pass2khr, shim_CmdBeginRenderPass2KHR)
+    PERF_HOOK("vkCreateGraphicsPipelines", real_create_pipelines, shim_CreateGraphicsPipelines)
+#undef PERF_HOOK
     for (size_t i = 0; i < sizeof(g_device_hooks) / sizeof(g_device_hooks[0]); i++)
         if (!strcmp(name, g_device_hooks[i].name))
             return g_device_hooks[i].fn;

@@ -26,6 +26,11 @@
     <string name="texq_no">Нет</string>
     <string name="texq_low">Низкое</string>
     <string name="texq_ultra">Очень низкое</string>
+    <string name="gfx_preset_label">Профиль графики</string>
+    <string name="gfx_preset_hint">Записывается в настройки игры при следующем запуске. Серая кнопка значит, что он уже стоит; поменяете что-то в игре — кнопка вернётся и сбросит к этому профилю. Very low выключает эффекты для слабых GPU.</string>
+    <string name="gfx_preset_low">Low</string>
+    <string name="gfx_preset_very_low">Very low</string>
+    <string name="gfx_preset_pending">%1$s будет применён при следующем запуске</string>
     <string name="fps_cap_30">30 FPS</string>
     <string name="fps_cap_60">60 FPS</string>
     <string name="fps_cap_off">Без ограничения</string>

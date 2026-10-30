@@ -146,6 +146,10 @@ public final class NativeEngine {
         env.add("STORMDROID_IL2MONO_PERSISTENT_DATA=" + userData.getAbsolutePath());
         env.add("STORMDROID_IL2MONO_DATA_PATH=" + dataDir.getAbsolutePath());
         com.stormdroid.InstanceSettings is = instance.settings();
+        // The graphics profile, once: the player's own changes in game stay after this.
+        int graphics = is.getGraphicsPending(context);
+        GameGraphics.apply(context, graphics);
+        is.setGraphicsPending(com.stormdroid.InstanceSettings.GFX_KEEP);
         // The game's managed code sees the Windows player it was built for.
         env.add("STORMDROID_RUNTIME_PLATFORM=" + AtsGame.RUNTIME_PLATFORM_WINDOWS_PLAYER);
         env.add("STORMDROID_IL2MONO_EXE_CONFIG=" + AtsGame.EXE + ".config");
@@ -191,6 +195,8 @@ public final class NativeEngine {
                 + "texture tier  : " + tier + " -> mipmap limit " + mipLimit + "\n"
                 + "render size   : " + (renderSize != null ? renderSize[0] + "x" + renderSize[1] : "screen") + "\n"
                 + "fps cap       : " + (is.getFpsCap() > 0 ? is.getFpsCap() : 0) + " (0 = none)\n"
+                + "graphics      : profile written now " + graphics + " (0 = none, 1 = Low, 2 = Very low), matches "
+                + GameGraphics.detect(context) + "\n"
                 + "extra env     : " + userEnvironmentSummary(is) + "\n"
                 + "unity args    : (see below)\n";
 

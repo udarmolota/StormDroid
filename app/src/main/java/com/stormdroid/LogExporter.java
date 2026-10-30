@@ -30,6 +30,12 @@ public final class LogExporter {
     private static final long NATIVE_LOG_HEAD_BYTES = 1L * 1024 * 1024;
     private static final long NATIVE_LOG_TAIL_BYTES = 2L * 1024 * 1024;
 
+    /** The ClientPrefs keys that change what the GPU has to do ("deapthOfField" is the game's own spelling). */
+    private static final String[] GAME_GRAPHICS_KEYS = {
+            "graphicsLevel", "vSync", "maxFPS", "complexEffects", "shadowsFadeDistance", "screenFog", "motionBlur",
+            "deapthOfField", "chromaticAberration", "lightningFlashes",
+    };
+
     private LogExporter() {}
 
     public static final class Result {
@@ -83,12 +89,48 @@ public final class LogExporter {
             }
             addLogcat(zos, buf, r);
             if (ctx != null) addExitInfo(ctx, zos, buf, r);
+            if (ctx != null) addGameSettings(ctx, zos, r);
         } catch (Exception e) {
             r.error = e.getMessage();
             return r;
         }
         if (r.items.isEmpty()) r.error = "No logs found yet (run the game first).";
         return r;
+    }
+
+    /**
+     * The game's own graphics settings, read from its PlayerPrefs (a low FPS report means little without
+     * them). Only these keys, not the whole file: the rest holds keybinds and the player's cloud id.
+     */
+    private static void addGameSettings(android.content.Context ctx, ZipOutputStream zos, Result r)
+            throws java.io.IOException {
+        File prefs = GameDataTransfer.prefsFile(ctx);
+        if (!prefs.isFile()) return;
+        StringBuilder out = new StringBuilder("Game graphics settings at the time of the report\n\n");
+        try {
+            String xml = new String(java.nio.file.Files.readAllBytes(prefs.toPath()), StandardCharsets.UTF_8);
+            java.util.regex.Matcher quality = java.util.regex.Pattern
+                    .compile("name=\"UnityGraphicsQuality\" value=\"(\\d+)\"").matcher(xml);
+            if (quality.find()) out.append("UnityGraphicsQuality: ").append(quality.group(1)).append('\n');
+            java.util.regex.Matcher client = java.util.regex.Pattern
+                    .compile("name=\"ClientPrefs\">([^<]*)<").matcher(xml);
+            if (client.find()) {
+                String json = java.net.URLDecoder.decode(client.group(1), "UTF-8");
+                for (String key : GAME_GRAPHICS_KEYS) {
+                    java.util.regex.Matcher m = java.util.regex.Pattern
+                            .compile("\"" + key + "\":\\s*([^,\\n]+)").matcher(json);
+                    if (m.find()) out.append(key).append(": ").append(m.group(1)).append('\n');
+                }
+            }
+        } catch (Exception e) {
+            out.append("reading the settings failed: ").append(e).append('\n');
+        }
+        byte[] bytes = out.toString().getBytes(StandardCharsets.UTF_8);
+        zos.putNextEntry(new ZipEntry("game_settings.txt"));
+        zos.write(bytes);
+        zos.closeEntry();
+        r.bytes += bytes.length;
+        r.items.add("game_settings.txt");
     }
 
     /** Copies up to max bytes of in into zos; returns how many. */

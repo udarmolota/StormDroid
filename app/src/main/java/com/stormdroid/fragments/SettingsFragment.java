@@ -28,6 +28,7 @@ public class SettingsFragment extends Fragment {
 
     private LauncherPreferences prefs;
     private InstanceSettings inst;
+    private View btnGfxLow, btnGfxVeryLow;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -192,5 +193,47 @@ public class SettingsFragment extends Fragment {
                     : (checkedId == R.id.rb_fps_60) ? 60 : 0;
             inst.setFpsCap(cap);
         });
+
+        btnGfxLow = view.findViewById(R.id.btn_gfx_low);
+        btnGfxVeryLow = view.findViewById(R.id.btn_gfx_very_low);
+        btnGfxLow.setOnClickListener(v -> queueGraphicsProfile(InstanceSettings.GFX_LOW, R.string.gfx_preset_low));
+        btnGfxVeryLow.setOnClickListener(v -> queueGraphicsProfile(InstanceSettings.GFX_VERY_LOW, R.string.gfx_preset_very_low));
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshGraphicsButtons();   // the player may have changed the game's settings meanwhile
+    }
+
+    // ---- graphics profile buttons ----
+
+    private void queueGraphicsProfile(int preset, int nameRes) {
+        inst.setGraphicsPending(preset);
+        android.widget.Toast.makeText(requireContext(), getString(R.string.gfx_preset_pending, getString(nameRes)),
+                android.widget.Toast.LENGTH_SHORT).show();
+        refreshGraphicsButtons();
+    }
+
+    /**
+     * A button is greyed while its profile is what the game will run with: the one queued for the next
+     * launch if there is one, else whatever the game's settings match exactly. Reads a file and may ask
+     * the GPU's name, so off the main thread.
+     */
+    private void refreshGraphicsButtons() {
+        if (btnGfxLow == null || inst == null) return;
+        final InstanceSettings s = inst;
+        final android.content.Context ctx = requireContext().getApplicationContext();
+        new Thread(() -> {
+            int pending = s.getGraphicsPending(ctx);
+            final int current = pending != InstanceSettings.GFX_KEEP ? pending : com.stormdroid.game.GameGraphics.detect(ctx);
+            android.app.Activity a = getActivity();
+            if (a == null) return;
+            a.runOnUiThread(() -> {
+                if (!isAdded() || btnGfxLow == null) return;
+                btnGfxLow.setEnabled(current != InstanceSettings.GFX_LOW);
+                btnGfxVeryLow.setEnabled(current != InstanceSettings.GFX_VERY_LOW);
+            });
+        }, "GfxProfileDetect").start();
     }
 }

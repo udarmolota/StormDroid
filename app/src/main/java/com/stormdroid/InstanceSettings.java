@@ -23,6 +23,26 @@ public class InstanceSettings {
         pfx = "inst:" + instanceName + ":";
     }
 
+    // --- Graphics profile written into the game's own settings (game.GameGraphics). ---
+    public static final int GFX_KEEP = 0, GFX_LOW = 1, GFX_VERY_LOW = 2;
+
+    /**
+     * The profile to write into the game on the NEXT launch, once; GFX_KEEP when there is nothing to
+     * write. With no stored value a game that never saved settings starts on one: Low, or Very low on
+     * a GPU other than Adreno, where textures are also converted while loading. A game that has saved
+     * them was played before and stays as it is.
+     */
+    public int getGraphicsPending(android.content.Context ctx) {
+        if (p.contains(pfx + "gfx_pending")) return p.getInt(pfx + "gfx_pending", GFX_KEEP);
+        if (com.stormdroid.game.GameGraphics.hasSavedSettings(ctx)) return GFX_KEEP;
+        String gpu = GpuInfo.query().renderer;
+        return gpu != null && gpu.contains("Adreno") ? GFX_LOW : GFX_VERY_LOW;
+    }
+
+    public void setGraphicsPending(int preset) {
+        p.edit().putInt(pfx + "gfx_pending", preset).apply();
+    }
+
     // --- Mirrored (180°-rotated) landscape. Still a FIXED orientation, just the opposite one: a USB-C
     // gamepad cradle holds the phone in one physical pose, which may be the reverse of ours. ---
     public boolean isReverseLandscape() {
