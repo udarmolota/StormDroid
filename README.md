@@ -10,8 +10,9 @@ Vulkan graphics and touch controls.
 > copy of the game as a ZIP.
 
 > [!WARNING]
-> **The app is an early alpha.** It is tested on one phone so far, a **Snapdragon (Adreno)** one. Phones with
-> Mali or Xclipse GPUs (MediaTek, Tensor, Exynos) are not tested yet and may run heavier.
+> **The app is in beta.** It supports both main phone GPUs, **Snapdragon (Adreno)** and **Mali** (MediaTek,
+> Tensor, Exynos). It has been tested on two phones so far, and Mali still runs slowly. Xclipse GPUs are not
+> tested yet.
 
 ## Features
 
@@ -19,6 +20,8 @@ Vulkan graphics and touch controls.
   emulated
 - ✔️ **Shaders converted on the phone** — before the first launch, the game's DirectX shaders are converted
   for Vulkan, once per instance, in about half a minute
+- ✔️ **Mali support** — the game's PC textures are converted to a format the GPU reads while the game loads
+- ✔️ **Graphics profiles** — Low and Very low in the instance settings, written into the game's own settings
 - ✔️ **In-app Steam download** — the game is saved as a ZIP in *Download/StormDroid*; **Create an instance**
   opens instance creation with it
 - ✔️ **Install from your own ZIP** — the game folder from your PC, zipped
@@ -27,24 +30,24 @@ Vulkan graphics and touch controls.
 - ✔️ **Save and settings import & export** — bring your settlement over from PC
 - ✔️ **Against the Storm news** from Steam on the home screen
 - ✔️ **Bug reports** with logs, sent from your own email app
-- ✔️ Russian, Spanish, Portuguese and Simplified Chinese translations (some still partial)
+- ✔️ Russian, Spanish, Portuguese and Simplified Chinese translations
 
 ## Project status & what to expect
 
-StormDroid is very young — the first alpha came out in **October 2026** — and is built by **one person**, on
+StormDroid is very young — the first release came out in **October 2026** — and is built by **one person**, on
 the same approach as [RimDroid](https://github.com/udarmolota/RimDroid). A few honest notes:
 
-- **Snapdragon is the tested path.** The game's textures use a PC compression format (BC) that Mali and
-  Xclipse GPUs do not support. Unity unpacks such textures on load, so the game should still start there, but
-  it will need several times more memory and load slower. Not tested yet — reports from those phones help.
-- **Tested on one device** so far (Galaxy S25 Ultra). Other Snapdragon phones should work; how well they play
-  is still unknown — reports help.
+- **Snapdragon runs best.** The game's textures use a PC compression format (BC) that Mali GPUs do not support,
+  so StormDroid converts them while the game loads. Textures show correctly on a real Mali phone, but the frame
+  rate there is still low — reports from those phones help.
+- **Tested on two devices** so far: Galaxy S25 Ultra (Snapdragon) and a Mali-G615 phone. Other phones should
+  work; how well they play is still unknown — reports help.
 - Android may say the app is **not 16 KB compatible**. This comes from Unity's player; on today's phones it
   is safe to ignore.
 
 ## System requirements
 
-- Android 11+, ARM64; a **Snapdragon (Adreno) GPU** recommended (Mali and Xclipse not tested yet)
+- Android 11+, ARM64; an **Adreno (Snapdragon)** or **Mali** GPU, Adreno recommended (Xclipse not tested yet)
 - About **15 GB free storage** for the first install (download, ZIP and the installed game); the ZIP can be
   deleted afterwards
 - A copy of Against the Storm you own (Windows version, e.g. on Steam)
@@ -55,8 +58,9 @@ the same approach as [RimDroid](https://github.com/udarmolota/RimDroid). A few h
 - [x] Shader conversion on the phone
 - [x] Steam download
 - [x] Save / settings import & export
-- [ ] **Mali and Xclipse GPUs** (MediaTek, Tensor, Exynos): test them, and convert the game's textures to a
-  format they support, as RimDroid does
+- [x] **Mali GPUs**: the game's textures converted to a format they support
+- [ ] Better **performance on Mali**
+- [ ] **Xclipse GPUs**: test them
 - [ ] **Cloud saves** with Steam
 - [ ] **GOG** download, maybe **Epic Games Store** later
 - [ ] Controls layout import & export

@@ -150,4 +150,78 @@
     <string name="launch_preparing_message">Preparando o jogo. A primeira inicialização converte os shaders.</string>
     <string name="editor_layout_classic">Clássico</string>
     <string name="controls_editor_classic_loaded">Layout clássico carregado</string>
+    <string name="incomplete_game_msg">Esta instância não pode iniciar: estes arquivos do jogo estão faltando ou incompletos:\n\n%1$s\n\nUse uma cópia completa da versão Windows do jogo e adicione-a como uma nova instância.</string>
+    <string name="instance_shortcut_long">Against the Storm — %1$s</string>
+    <string name="fps_cap_hint">Limita o FPS para suavizar as oscilações e poupar bateria. Experimente 60 ou 30 se o contador oscilar.</string>
+    <string name="texq_hint">Reduz as texturas para poupar memória e ganhar FPS: Não = metade do tamanho, Baixa = um quarto, Muito baixa = um oitavo. Quanto mais baixa, mais rápido e mais borrado.</string>
+    <string name="gfx_preset_label">Perfil gráfico</string>
+    <string name="gfx_preset_hint">É gravado nas configurações do jogo na próxima inicialização. Cinza significa que já está aplicado; se você mudar algo no jogo, o botão volta, então ele também restaura este perfil. Muito baixo desativa os efeitos para GPUs fracas.</string>
+    <string name="gfx_preset_low">Baixo</string>
+    <string name="gfx_preset_very_low">Muito baixo</string>
+    <string name="gfx_preset_pending">%1$s será aplicado na próxima inicialização</string>
+    <string name="render_res_hint">Menor = mais FPS em GPUs fracas. Nativa = mais nítido. A interface do jogo mantém o tamanho; altere-a nas opções de vídeo do próprio jogo (UI size).</string>
+    <string name="launcher_empty_guide">Para começar a jogar, crie uma instância: uma cópia instalada de Against the Storm. Compacte a versão Windows do jogo em um ZIP (a pasta com \"Against the Storm.exe\") e adicione-a com o + no topo.</string>
+    <string name="release_notes_body"><b>– GPUs Mali</b>\nOs drivers delas não suportam o formato de textura da versão de PC, então agora as texturas são convertidas durante o carregamento.\n\n<b>– Perfis gráficos</b>\nBaixo e Muito baixo nas configurações da instância. Muito baixo desativa os efeitos para GPUs fracas. Novas instalações começam em Baixo, ou em Muito baixo em GPUs sem suporte às texturas de PC. Tocar em um botão de novo restaura o jogo para esse perfil.\n\n<b>– Cursor corrigido</b>\nNo modo 1366×768 com margens pretas, o cursor se afastava do dedo. Corrigido.\n\n<b>– Download da Steam corrigido</b>\nCompactar o jogo baixado em um zip podia falhar com \"FileNotFoundException\". Corrigido.\n\n<b>– Download da Steam mais rápido</b>\nAgora doze conexões baixam os dados do jogo, então arquivos grandes não são mais baixados pedaço por pedaço.\n\n<b>– Relatórios de erro melhores</b>\nO relatório agora mostra FPS, tempos de quadro, uso de CPU, memória, detalhes da GPU e as configurações gráficas do jogo, para vermos o que deixa seu jogo lento.</string>
+    <string name="app_settings_note">As configurações do jogo (resolução, texturas, FPS, controles) são por instância: abra-as pelo ícone de engrenagem no cartão do jogo.</string>
+    <string name="env_vars_hint_example">ex.: STORMDROID_UNITY_ARGS=-force-gfx-direct</string>
+    <string name="nav_saves_transfer">Importar/exportar saves</string>
+    <string name="nav_settings_transfer">Importar/exportar configurações</string>
+    <string name="transfer_instance">Instância</string>
+    <string name="transfer_no_instances">Ainda não há instâncias</string>
+    <string name="transfer_import">Importar</string>
+    <string name="transfer_export">Exportar</string>
+    <string name="saves_transfer_import_title">Importar saves</string>
+    <string name="saves_transfer_import_hint" formatted="false">Um zip com saves de Against the Storm (os arquivos *.save): exportado do StormDroid ou a pasta do PC %USERPROFILE%\\AppData\\LocalLow\\Eremite Games\\Against the Storm compactada. Antes, os saves atuais são copiados para junto da instância.</string>
+    <string name="saves_transfer_export_title">Exportar saves</string>
+    <string name="saves_transfer_export_hint" formatted="false">Salva os saves desta instância em um zip. No PC, descompacte-o em %USERPROFILE%\\AppData\\LocalLow\\Eremite Games\\Against the Storm com o jogo fechado.</string>
+    <string name="settings_transfer_import_title">Importar configurações do jogo</string>
+    <string name="settings_transfer_import_hint">Um zip com configurações do jogo exportado do StormDroid em outro celular: gráficos, áudio, câmera, teclas, idioma. Feche o jogo antes.</string>
+    <string name="settings_transfer_export_title">Exportar configurações do jogo</string>
+    <string name="settings_transfer_export_hint">Salva as configurações do jogo em um zip para levá-las a outro celular. A versão de PC guarda as configurações no registro do Windows, então não é possível movê-las entre PC e celular.</string>
+    <string name="saves_transfer_import_confirm">Substituir os saves de %2$s pelos de %1$s? Antes, os saves atuais são copiados para junto da instância.</string>
+    <string name="settings_transfer_import_confirm">Substituir as configurações do jogo pelas de %1$s?</string>
+    <string name="transfer_imported">Importado (%1$d arquivos)</string>
+    <string name="transfer_import_failed">Falha ao importar: %1$s</string>
+    <string name="transfer_exported">Exportados %1$d arquivos (%2$d KB)</string>
+    <string name="transfer_export_failed">Falha ao exportar: %1$s</string>
+    <string name="bug_report_intro">Algo deu errado? Envie um relatório. Ele inclui os logs do jogo, para vermos o que aconteceu.</string>
+    <string name="bug_report_group_email">Enviar por e-mail</string>
+    <string name="bug_report_steps">1. Escolha o jogo acima.\n2. Toque em Enviar por e-mail.\n3. Na lista que abrir, escolha seu app de e-mail (Gmail, Outlook…).\n4. Escreva algumas palavras sobre o que aconteceu e envie.</string>
+    <string name="bug_report_send_email">Enviar por e-mail</string>
+    <string name="bug_report_no_email_title">Sem app de e-mail neste aparelho?</string>
+    <string name="bug_report_no_email_text">Salve o relatório em um arquivo e envie de qualquer aparelho para este endereço. Anexe o arquivo e escreva algumas palavras sobre o que aconteceu.</string>
+    <string name="bug_report_copy">Copiar</string>
+    <string name="bug_report_save_file">Salvar relatório em arquivo</string>
+    <string name="bug_report_copied">Endereço copiado</string>
+    <string name="bug_report_pick_instance">Este relatório é sobre qual jogo?</string>
+    <string name="bug_report_preparing">Preparando o relatório…</string>
+    <string name="bug_report_pick_mail">Enviar com</string>
+    <string name="bug_report_no_mail_use_file">Nenhum app de e-mail encontrado neste aparelho. Salve o relatório em um arquivo e envie de outro aparelho.</string>
+    <string name="bug_report_saved">Relatório salvo</string>
+    <string name="bug_report_save_failed">Não foi possível salvar o relatório: %1$s</string>
+    <string name="news_title">Notícias de Against the Storm</string>
+    <string name="nav_download_game">Baixar da Steam</string>
+    <string name="download_game_title">Baixar Against the Storm da Steam</string>
+    <string name="download_login_note">Seu login é enviado à Steam (do mesmo jeito que o DepotDownloader) e NÃO é salvo. O Steam Guard precisa estar ativado no app Steam Mobile: você aprova o login lá, não com um código por e-mail. O jogo precisa estar nesta conta Steam.</string>
+    <string name="download_user_hint">Usuário da Steam</string>
+    <string name="download_pass_hint">Senha da Steam</string>
+    <string name="download_manifest_hint">Avançado: ID do manifesto (vazio = versão mais recente)</string>
+    <string name="download_start">Baixar</string>
+    <string name="download_cancel">Cancelar download</string>
+    <string name="download_cancel_confirm">Cancelar o download em andamento? Ao baixar de novo, ele continua de onde parou.</string>
+    <string name="download_required">Obrigatório</string>
+    <string name="download_space_note">O jogo ocupa cerca de 7 GB durante o download; depois é compactado em um zip em Download/StormDroid (mais alguns GB por um momento). Fique na mesma rede até o download terminar.</string>
+    <string name="download_guard_title">Digite o código do Steam Guard</string>
+    <string name="download_guard_wrong">Código incorreto, tente novamente</string>
+    <string name="download_guard_hint">Código do Steam Guard</string>
+    <string name="download_guard_email_hint">Código enviado para %1$s</string>
+    <string name="nav_header_subtitle">Against the Storm no Android</string>
+    <string name="download_storage_title">Acesso ao armazenamento necessário</string>
+    <string name="download_storage_message">O jogo é salvo como zip na pasta pública Download/StormDroid, para você ver, guardar e reutilizar. Permita o \"Acesso a todos os arquivos\" para o StormDroid e toque em Baixar novamente.</string>
+    <string name="download_storage_grant">Permitir</string>
+    <string name="download_create_instance">Criar instância a partir de %1$s</string>
+    <string name="install_starting">Iniciando…</string>
+    <string name="install_copying">Copiando o arquivo… %1$d%% (%2$d / %3$d MB)</string>
+    <string name="install_extracting">Descompactando o jogo… %1$d%% (%2$d / %3$d MB)</string>
+    <string name="native_engine_failed">Não foi possível iniciar o motor nativo: %1$s</string>
 </resources>
