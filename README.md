@@ -11,8 +11,7 @@ Vulkan graphics and touch controls.
 
 > [!WARNING]
 > **The app is in beta.** It supports both main phone GPUs, **Snapdragon (Adreno)** and **Mali** (MediaTek,
-> Tensor, Exynos). It has been tested on two phones so far, and Mali still runs slowly. Xclipse GPUs are not
-> tested yet.
+> Tensor, Exynos). It has been tested on two phones so far. Xclipse GPUs are not tested yet.
 
 ## Features
 
@@ -37,9 +36,6 @@ Vulkan graphics and touch controls.
 StormDroid is very young — the first release came out in **October 2026** — and is built by **one person**, on
 the same approach as [RimDroid](https://github.com/udarmolota/RimDroid). A few honest notes:
 
-- **Snapdragon runs best.** The game's textures use a PC compression format (BC) that Mali GPUs do not support,
-  so StormDroid converts them while the game loads. Textures show correctly on a real Mali phone, but the frame
-  rate there is still low — reports from those phones help.
 - **Tested on two devices** so far: Galaxy S25 Ultra (Snapdragon) and a Mali-G615 phone. Other phones should
   work; how well they play is still unknown — reports help.
 - Android may say the app is **not 16 KB compatible**. This comes from Unity's player; on today's phones it
@@ -47,7 +43,7 @@ the same approach as [RimDroid](https://github.com/udarmolota/RimDroid). A few h
 
 ## System requirements
 
-- Android 11+, ARM64; an **Adreno (Snapdragon)** or **Mali** GPU, Adreno recommended (Xclipse not tested yet)
+- Android 11+, ARM64; an **Adreno (Snapdragon)** or **Mali** GPU (Xclipse not tested yet)
 - About **15 GB free storage** for the first install (download, ZIP and the installed game); the ZIP can be
   deleted afterwards
 - A copy of Against the Storm you own (Windows version, e.g. on Steam)
@@ -59,7 +55,6 @@ the same approach as [RimDroid](https://github.com/udarmolota/RimDroid). A few h
 - [x] Steam download
 - [x] Save / settings import & export
 - [x] **Mali GPUs**: the game's textures converted to a format they support
-- [ ] Better **performance on Mali**
 - [ ] **Xclipse GPUs**: test them
 - [ ] **Cloud saves** with Steam
 - [ ] **GOG** download, maybe **Epic Games Store** later
