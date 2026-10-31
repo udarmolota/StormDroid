@@ -38,8 +38,6 @@ the same approach as [RimDroid](https://github.com/udarmolota/RimDroid). A few h
 
 - **Tested on two devices** so far: Galaxy S25 Ultra (Snapdragon) and a Mali-G615 phone. Other phones should
   work; how well they play is still unknown — reports help.
-- Android may say the app is **not 16 KB compatible**. This comes from Unity's player; on today's phones it
-  is safe to ignore.
 
 ## System requirements
 
