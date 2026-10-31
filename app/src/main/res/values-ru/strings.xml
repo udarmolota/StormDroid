@@ -198,7 +198,7 @@
     <string name="news_title">Новости Against the Storm</string>
     <string name="nav_download_game">Скачать из Steam</string>
     <string name="download_game_title">Скачивание Against the Storm из Steam</string>
-    <string name="download_login_note">Логин отправляется в Steam (так же, как это делает DepotDownloader) и НЕ сохраняется. Подтвердите вход в приложении Steam Mobile или введите код Steam Guard, когда попросят. Игра должна быть на этом аккаунте Steam.</string>
+    <string name="download_login_note">Логин отправляется в Steam (так же, как это делает DepotDownloader) и НЕ сохраняется. В приложении Steam Mobile должен быть включён Steam Guard: вход подтверждается там, а не кодом из почты. Игра должна быть на этом аккаунте Steam.</string>
     <string name="download_user_hint">Логин Steam</string>
     <string name="download_pass_hint">Пароль Steam</string>
     <string name="download_manifest_hint">Дополнительно: Manifest ID (пусто = последняя версия)</string>

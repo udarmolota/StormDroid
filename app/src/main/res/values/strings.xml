@@ -210,7 +210,7 @@
     <string name="news_title">Against the Storm news</string>
     <string name="nav_download_game">Download from Steam</string>
     <string name="download_game_title">Download Against the Storm from Steam</string>
-    <string name="download_login_note">Your login is sent to Steam (the same way DepotDownloader works) and is NOT stored. Approve the sign-in in your Steam Mobile app, or enter the Steam Guard code when asked. The game must be on this Steam account.</string>
+    <string name="download_login_note">Your login is sent to Steam (the same way DepotDownloader works) and is NOT stored. Steam Guard must be turned on in the Steam Mobile app: you approve the sign-in there, not with a code from email. The game must be on this Steam account.</string>
     <string name="download_user_hint">Steam username</string>
     <string name="download_pass_hint">Steam password</string>
     <string name="download_manifest_hint">Advanced: manifest ID (blank = newest version)</string>
