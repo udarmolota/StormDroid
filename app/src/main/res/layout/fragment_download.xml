@@ -73,6 +73,22 @@
             android:layout_height="wrap_content"
             android:text="@string/download_start" />
 
+        <!-- DLCs: Against the Storm's DLC content is in the game already; this signs in and records
+             which DLCs the account owns, so the game unlocks them (SteamDownloader.forDlcCheck). -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_dl_check_dlc"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/download_check_dlc" />
+
+        <TextView
+            android:id="@+id/tv_dl_dlcs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
+
         <ProgressBar
             android:id="@+id/progress_dl"
             style="?android:attr/progressBarStyleHorizontal"

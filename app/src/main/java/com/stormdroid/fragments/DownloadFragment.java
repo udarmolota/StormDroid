@@ -38,9 +38,9 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
     private final Handler mainH = new Handler(Looper.getMainLooper());
 
     private EditText etUser, etPass, etManifest;
-    private Button btnStart, btnCancel, btnCreateInstance;
+    private Button btnStart, btnCancel, btnCreateInstance, btnCheckDlc;
     private ProgressBar progress;
-    private TextView tvStatus;
+    private TextView tvStatus, tvDlcs;
     private android.content.Context appCtx;   // for the keep-alive service (valid even if detached)
 
     @Override
@@ -63,6 +63,10 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
         tvStatus = v.findViewById(R.id.tv_dl_status);
         tvStatus.setMovementMethod(new ScrollingMovementMethod());
         btnStart.setOnClickListener(view -> startGame());
+        btnCheckDlc = v.findViewById(R.id.btn_dl_check_dlc);
+        tvDlcs = v.findViewById(R.id.tv_dl_dlcs);
+        btnCheckDlc.setOnClickListener(view -> checkDlcs());
+        showDlcs();
         btnCancel.setOnClickListener(view -> confirmCancel());
 
         // Re-attach to a download already running in the background, restoring the log, the progress
@@ -126,6 +130,33 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
         new Thread(dl, "sd-download").start();
     }
 
+    /** Sign in only to record which DLCs the account owns (their content is in the game already). */
+    private void checkDlcs() {
+        if (SteamDownloadState.get().isDownloading()) return;
+        if (text(etUser).isEmpty()) { etUser.setError(getString(R.string.download_required)); return; }
+        if (etPass.getText().toString().isEmpty()) { etPass.setError(getString(R.string.download_required)); return; }
+        SteamDownloadState st = SteamDownloadState.get();
+        SteamDownloader dl = SteamDownloader.forDlcCheck(text(etUser), etPass.getText().toString(), st);
+        st.begin(appCtx);
+        st.setActive(dl);
+        beginUi();
+        new Thread(dl, "sd-dlc-check").start();
+    }
+
+    /** The DLCs the last check found: unlocked in the game at the next launch. */
+    private void showDlcs() {
+        if (tvDlcs == null) return;
+        int mask = com.stormdroid.LauncherPreferences.requireSingleton().getOwnedDlcs();
+        if (mask < 0) {
+            tvDlcs.setText(R.string.download_dlcs_unchecked);
+            return;
+        }
+        StringBuilder names = new StringBuilder();
+        if ((mask & 1) != 0) names.append(getString(R.string.dlc_keepers_of_the_stone));
+        if ((mask & 2) != 0) names.append(names.length() > 0 ? ", " : "").append(getString(R.string.dlc_nightwatchers));
+        tvDlcs.setText(mask == 0 ? getString(R.string.download_dlcs_none) : getString(R.string.download_dlcs_owned, names));
+    }
+
     private void confirmCancel() {
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireActivity())
                 .setMessage(R.string.download_cancel_confirm)
@@ -163,6 +194,7 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
     /** Enable/disable the start controls (everything except Cancel) while a download runs. */
     private void setControlsEnabled(boolean enabled) {
         btnStart.setEnabled(enabled);
+        if (btnCheckDlc != null) btnCheckDlc.setEnabled(enabled);
         etUser.setEnabled(enabled);
         etPass.setEnabled(enabled);
         etManifest.setEnabled(enabled);
@@ -187,6 +219,7 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
     @Override
     public void onFinished(String message) {
         setControlsEnabled(true);
+        showDlcs();
         if (progress != null) progress.setVisibility(View.GONE);
         if (btnCancel != null) btnCancel.setVisibility(View.GONE);
         showCreateInstance(true);

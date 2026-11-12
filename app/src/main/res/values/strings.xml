@@ -328,4 +328,10 @@
     <string name="ts_total_size">To download: %1$s</string>
     <string name="nav_mods">Mods</string>
     <string name="ts_menu">Thunderstore mods</string>
+    <string name="download_check_dlc">Check my DLCs</string>
+    <string name="download_dlcs_unchecked">DLCs: not checked yet. Their content is already in the game; checking your Steam account unlocks the ones you own.</string>
+    <string name="download_dlcs_none">DLCs: none found on this Steam account.</string>
+    <string name="download_dlcs_owned">DLCs unlocked in the game: %1$s</string>
+    <string name="dlc_keepers_of_the_stone" translatable="false">Keepers of the Stone</string>
+    <string name="dlc_nightwatchers" translatable="false">Nightwatchers</string>
 </resources>

@@ -316,4 +316,8 @@
     <string name="ts_total_size">A descargar: %1$s</string>
     <string name="nav_mods">Mods</string>
     <string name="ts_menu">Mods de Thunderstore</string>
+    <string name="download_check_dlc">Comprobar mis DLC</string>
+    <string name="download_dlcs_unchecked">DLC: aún no comprobados. Su contenido ya está en el juego; comprobar tu cuenta de Steam desbloquea los que tienes.</string>
+    <string name="download_dlcs_none">DLC: no se encontró ninguno en esta cuenta de Steam.</string>
+    <string name="download_dlcs_owned">DLC desbloqueados en el juego: %1$s</string>
 </resources>

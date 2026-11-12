@@ -34,6 +34,7 @@ namespace StormDroid
                 VirtualPad.Initialize();
                 VirtualKeyboardMouse.Initialize();
                 Handheld.Initialize();
+                OwnedDlcs.Initialize();
                 SetScrollReady(true);
                 Debug.Log("STORMDROID input bridge: started");
             }
@@ -95,6 +96,69 @@ namespace StormDroid
             catch (Exception e)
             {
                 Debug.Log("STORMDROID input bridge: handheld mode failed: " + e);
+                InputSystem.onBeforeUpdate -= Apply;
+            }
+        }
+    }
+
+    // The DLCs the player owns. The game asks Steam for each DLC (SteamApps.BIsDlcInstalled) and keeps the
+    // answer in BasePlatformService.ownedDLCs, a DLCType flags field (Frogs = Keepers of the Stone 1, Bats =
+    // Nightwatchers 2). Steam does not run here, so that check throws and every DLC stays locked. The
+    // launcher checks the purchases on the player's Steam account and passes them in STORMDROID_OWNED_DLCS
+    // (the same flags); the bridge sets the field as soon as the platform service exists, before the
+    // DLC service reads it. Only owned DLCs are passed: the content of the others stays locked.
+    public static class OwnedDlcs
+    {
+        static PropertyInfo s_Instance, s_AppServices, s_Platform;
+        static int s_Mask;
+        static object s_Done;
+
+        internal static void Initialize()
+        {
+            if (!int.TryParse(Environment.GetEnvironmentVariable("STORMDROID_OWNED_DLCS"), out s_Mask) || s_Mask <= 0)
+                return;
+            var controller = Type.GetType("Eremite.Controller.MainController, Assembly-CSharp");
+            if (controller == null)
+            {
+                Debug.Log("STORMDROID input bridge: no MainController, DLCs not set");
+                return;
+            }
+            s_Instance = controller.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
+            InputSystem.onBeforeUpdate += Apply;
+        }
+
+        static void Apply()
+        {
+            try
+            {
+                object main = s_Instance?.GetValue(null);
+                if (main == null)
+                    return;
+                if (s_AppServices == null)
+                    s_AppServices = main.GetType().GetProperty("AppServices", BindingFlags.Public | BindingFlags.Instance);
+                object services = s_AppServices?.GetValue(main);
+                if (services == null)
+                    return;
+                if (s_Platform == null)
+                    s_Platform = services.GetType().GetProperty("PlatformService", BindingFlags.Public | BindingFlags.Instance);
+                object platform = s_Platform?.GetValue(services);
+                if (platform == null || ReferenceEquals(platform, s_Done))
+                    return;
+                FieldInfo field = null;
+                for (Type t = platform.GetType(); t != null && field == null; t = t.BaseType)
+                    field = t.GetField("ownedDLCs", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                if (field != null)
+                {
+                    int owned = Convert.ToInt32(field.GetValue(platform)) | s_Mask;
+                    field.SetValue(platform, Enum.ToObject(field.FieldType, owned));
+                }
+                s_Done = platform;
+                Debug.Log("STORMDROID input bridge: owned DLCs " + (field != null ? s_Mask.ToString() : "unavailable")
+                        + " (" + platform.GetType().Name + ")");
+            }
+            catch (Exception e)
+            {
+                Debug.Log("STORMDROID input bridge: owned DLCs failed: " + e);
                 InputSystem.onBeforeUpdate -= Apply;
             }
         }

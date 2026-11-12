@@ -143,6 +143,24 @@ public class SteamDownloader implements Runnable, Cancellable {
     private int downloadAttempts;
     private int authAttempts;                      // initial-sign-in attempts (drops during approval)
 
+    /**
+     * The game's content DLCs: Steam app id and the DLCType flag the game unlocks with it (Keepers of the
+     * Stone = Frogs 1, Nightwatchers = Bats 2). Their content ships inside the game's own depot; the game
+     * only asks Steam whether they are owned (see NativeEngine, STORMDROID_OWNED_DLCS).
+     */
+    private static final int[][] CONTENT_DLCS = {{3075500, 1}, {3725110, 2}};
+    private static final String[] CONTENT_DLC_NAMES = {"Keepers of the Stone", "Nightwatchers"};
+
+    /** Only checks which DLCs the account owns (no download): {@link #forDlcCheck}. */
+    private boolean dlcOnly;
+
+    /** Sign in, record the account's DLCs and stop. */
+    public static SteamDownloader forDlcCheck(String username, String password, Listener listener) {
+        SteamDownloader d = new SteamDownloader(username, password, false, 0L, listener);
+        d.dlcOnly = true;
+        return d;
+    }
+
     /** Download Against the Storm and pack it into a zip in /Download/StormDroid. */
     public SteamDownloader(String username, String password, boolean manifestOnly, long manifestId, Listener listener) {
         this.username = username;
@@ -329,9 +347,54 @@ public class SteamDownloader implements Runnable, Cancellable {
         // Start exactly one download attempt per (re)connect; never while one is in flight or done.
         if (downloadStarted || downloadInProgress || downloadCompleted) return;
         downloadStarted = true;
-        Thread t = new Thread(this::download, "sd-depot-dl");
+        Thread t = new Thread(this::afterLicenses, "sd-depot-dl");
         workerThread = t;            // tracked so cancel() can interrupt the blocking download
         t.start();
+    }
+
+    /** Every sign-in records the account's DLCs; then the download, unless only the DLCs were asked for. */
+    private void afterLicenses() {
+        checkOwnedDlcs();
+        if (!dlcOnly) {
+            download();
+            return;
+        }
+        downloadCompleted = true;
+        done("DLC check finished.");
+        running = false;
+        try { steamUser.logOff(); } catch (Throwable ignored) {}
+    }
+
+    /**
+     * Which content DLCs the signed-in account owns: the app ids of every package it holds (PICS), as
+     * RimDroid finds its DLCs. Saved for the next launches; a failed check keeps the last answer.
+     */
+    private void checkOwnedDlcs() {
+        try {
+            List<PICSRequest> packages = new ArrayList<>();
+            if (licenseList != null)
+                for (License l : licenseList) packages.add(new PICSRequest(l.getPackageID(), l.getAccessToken()));
+            SteamApps apps = steamClient.getHandler(SteamApps.class);
+            AsyncJobMultiple.ResultSet<PICSProductInfoCallback> rs =
+                    apps.picsGetProductInfo(Collections.emptyList(), packages).toFuture().get(60, TimeUnit.SECONDS);
+            Set<Integer> owned = new HashSet<>();
+            for (PICSProductInfoCallback cb : rs.getResults())
+                for (PICSProductInfo pkg : cb.getPackages().values())
+                    for (KeyValue a : pkg.getKeyValues().get("appids").getChildren()) owned.add(a.asInteger(0));
+            int mask = 0;
+            StringBuilder names = new StringBuilder();
+            for (int i = 0; i < CONTENT_DLCS.length; i++) {
+                if (!owned.contains(CONTENT_DLCS[i][0])) continue;
+                mask |= CONTENT_DLCS[i][1];
+                if (names.length() > 0) names.append(", ");
+                names.append(CONTENT_DLC_NAMES[i]);
+            }
+            LauncherPreferences.requireSingleton().setOwnedDlcs(mask);
+            progress("DLCs on this account: " + (mask == 0 ? "none" : names) + ".");
+        } catch (Throwable t) {
+            Log.w(TAG, "DLC check failed", t);
+            progress("Could not check the DLCs: " + describe(t));
+        }
     }
 
     private void download() {

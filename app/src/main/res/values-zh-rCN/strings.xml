@@ -314,4 +314,8 @@
     <string name="ts_total_size">需下载：%1$s</string>
     <string name="nav_mods">模组</string>
     <string name="ts_menu">Thunderstore 模组</string>
+    <string name="download_check_dlc">检查我的 DLC</string>
+    <string name="download_dlcs_unchecked">DLC：尚未检查。其内容已包含在游戏中；检查你的 Steam 账户即可解锁已购买的 DLC。</string>
+    <string name="download_dlcs_none">DLC：此 Steam 账户中未找到。</string>
+    <string name="download_dlcs_owned">游戏中已解锁的 DLC：%1$s</string>
 </resources>

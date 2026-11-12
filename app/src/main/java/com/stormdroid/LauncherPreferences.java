@@ -67,6 +67,15 @@ public class LauncherPreferences {
         prefs.edit().putInt("theme_mode", mode).apply();
     }
 
+    // --- DLCs the Steam account owns (DLCType flags, see SteamDownloader.CONTENT_DLCS); -1 = never checked ---
+    public int getOwnedDlcs() {
+        return prefs.getInt("owned_dlcs", -1);
+    }
+
+    public void setOwnedDlcs(int mask) {
+        prefs.edit().putInt("owned_dlcs", mask).apply();
+    }
+
     // --- Last instance ---
 
     public String getLastInstanceName() {

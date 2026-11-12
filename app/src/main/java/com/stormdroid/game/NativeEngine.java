@@ -211,6 +211,10 @@ public final class NativeEngine {
         int[] renderSize = renderSize(context, is);
         if (renderSize == null) renderSize = landscapeScreenSize(context);
         env.add("STORMDROID_RENDER_SIZE=" + (renderSize != null ? renderSize[0] + "x" + renderSize[1] : ""));
+        // The DLCs the player's Steam account owns (checked on the Download screen): their content is in
+        // the game already, the input bridge tells the game they are owned. DLCType flags.
+        int ownedDlcs = com.stormdroid.LauncherPreferences.requireSingleton().getOwnedDlcs();
+        if (ownedDlcs > 0) env.add("STORMDROID_OWNED_DLCS=" + ownedDlcs);
         boolean mods = addMods(context, instance, gameDir, dataDir, env);
         addUserEnvironment(is, env);
         Log.i(TAG, "native engine environment: " + launchSummary(env));
@@ -232,7 +236,8 @@ public final class NativeEngine {
                 + "fps cap       : " + (is.getFpsCap() > 0 ? is.getFpsCap() : 0) + " (0 = none)\n"
                 + "graphics      : profile written now " + graphics + " (0 = none, 1 = Low, 2 = Very low), matches "
                 + GameGraphics.detect(context) + "\n"
-                + "mods          : " + (mods ? "ON (BepInEx " + com.stormdroid.ModManager.BEPINEX_VERSION + ", "
+                + "dlcs          : " + (ownedDlcs < 0 ? "not checked" : ownedDlcs) + " (1 = Keepers of the Stone, 2 = Nightwatchers)\n"
+                + "mods          : " + (mods ?"ON (BepInEx " + com.stormdroid.ModManager.BEPINEX_VERSION + ", "
                         + com.stormdroid.ModManager.countEnabled(gameDir) + " enabled: " + enabledMods(gameDir) + ")"
                         : (is.isModSupport() ? "off (BepInEx setup failed)" : "off")) + "\n"
                 + "extra env     : " + userEnvironmentSummary(is) + "\n"
