@@ -59,6 +59,10 @@ public final class LogExporter {
                 gamePath != null ? new File(gamePath, com.stormdroid.game.NativeLog.PREV) : null,
                 // the shader conversion's report (ShaderPrep)
                 gamePath != null ? new File(gamePath, "native_engine/shaderdroid_report.json") : null,
+                // What BepInEx says about the mods (each one loaded or why not), and the preloader's
+                // crash log when it failed to start (as in ValDroid).
+                gamePath != null ? new File(gamePath, "BepInEx/LogOutput.log") : null,
+                gamePath != null ? newestPreloaderLog(gamePath) : null,
                 crashLog,
         };
 
@@ -66,9 +70,11 @@ public final class LogExporter {
             byte[] buf = new byte[65536];
             for (File f : candidates) {
                 if (f == null || !f.isFile()) continue;
-                zos.putNextEntry(new ZipEntry(f.getName()));
+                boolean bepinex = f.getName().equals("LogOutput.log") || f.getName().startsWith("preloader_");
+                String entry = bepinex ? "bepinex-" + f.getName() : f.getName();
+                zos.putNextEntry(new ZipEntry(entry));
                 try (FileInputStream in = new FileInputStream(f)) {
-                    boolean gameLog = f.getName().startsWith("native_engine") && f.getName().endsWith(".log");
+                    boolean gameLog = (f.getName().startsWith("native_engine") || bepinex) && f.getName().endsWith(".log");
                     long length = f.length();
                     if (gameLog && length > NATIVE_LOG_HEAD_BYTES + NATIVE_LOG_TAIL_BYTES) {
                         r.bytes += copy(in, zos, buf, NATIVE_LOG_HEAD_BYTES);
@@ -85,7 +91,7 @@ public final class LogExporter {
                     r.bytes += copy(in, zos, buf, Long.MAX_VALUE);
                 }
                 zos.closeEntry();
-                r.items.add(f.getName());
+                r.items.add(entry);
             }
             addLogcat(zos, buf, r);
             if (ctx != null) addExitInfo(ctx, zos, buf, r);
@@ -247,6 +253,15 @@ public final class LogExporter {
             case 11: return " (SIGSEGV)";
             default: return "";
         }
+    }
+
+    /** BepInEx writes preloader_&lt;time&gt;.log into the game folder when its preloader fails; the newest one. */
+    @androidx.annotation.Nullable
+    private static File newestPreloaderLog(File gamePath) {
+        File[] logs = gamePath.listFiles((d, n) -> n.startsWith("preloader_") && n.endsWith(".log"));
+        File newest = null;
+        if (logs != null) for (File f : logs) if (newest == null || f.lastModified() > newest.lastModified()) newest = f;
+        return newest;
     }
 
     /**

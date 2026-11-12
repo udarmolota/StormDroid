@@ -32,15 +32,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Import and export of an instance's saves or of the game's settings (argument {@link #ARG_KIND}), one
- * screen from the drawer each (ported from ValDroid): the instance, an import card, an export card. The
- * zip format is GameDataTransfer's. Importing replaces files, so it is confirmed first.
+ * Import and export, one screen (as in Zomdroid): a card for an instance's saves and a card for the
+ * game's settings, each with Import and Export. The zip format is GameDataTransfer's. Importing
+ * replaces files, so it is confirmed first.
  */
 public class DataTransferFragment extends Fragment {
 
-    public static final String ARG_KIND = "kind";
-
-    private String kind;
+    private String kind = GameDataTransfer.SAVES;   // what the file picker in flight is for
     private Spinner spInstance;
     private final List<GameInstance> instances = new ArrayList<>();
     private GameInstance exportFor;   // the instance an export in flight belongs to
@@ -63,18 +61,6 @@ public class DataTransferFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(v, savedInstanceState);
-        kind = getArguments() != null ? getArguments().getString(ARG_KIND, GameDataTransfer.SAVES) : GameDataTransfer.SAVES;
-        ((TextView) v.findViewById(R.id.tv_transfer_import_title)).setText(
-                saves() ? R.string.saves_transfer_import_title : R.string.settings_transfer_import_title);
-        ((TextView) v.findViewById(R.id.tv_transfer_import_hint)).setText(
-                saves() ? R.string.saves_transfer_import_hint : R.string.settings_transfer_import_hint);
-        ((TextView) v.findViewById(R.id.tv_transfer_export_title)).setText(
-                saves() ? R.string.saves_transfer_export_title : R.string.settings_transfer_export_title);
-        ((TextView) v.findViewById(R.id.tv_transfer_export_hint)).setText(
-                saves() ? R.string.saves_transfer_export_hint : R.string.settings_transfer_export_hint);
-        // The game's settings belong to the app, not to an instance: no picker for them.
-        v.findViewById(R.id.card_transfer_instance).setVisibility(saves() ? View.VISIBLE : View.GONE);
-
         spInstance = v.findViewById(R.id.sp_transfer_instance);
         GameInstanceManager.requireSingleton().reload();
         instances.clear();
@@ -86,19 +72,28 @@ public class DataTransferFragment extends Fragment {
         a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spInstance.setAdapter(a);
 
-        v.findViewById(R.id.btn_transfer_import).setOnClickListener(b -> {
-            if (saves() && current() == null) return;
-            pickImport.launch(new String[]{"application/zip", "application/x-zip-compressed", "application/octet-stream"});
-        });
-        v.findViewById(R.id.btn_transfer_export).setOnClickListener(b -> {
-            GameInstance gi = current();
-            if (saves() && gi == null) return;
-            exportFor = gi;
-            String who = saves() ? "_" + gi.getName().replaceAll("[^A-Za-z0-9._-]", "_") : "";
-            pickExport.launch("stormdroid_" + kind + who + "_"
-                    + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(new java.util.Date())
-                    + ".zip");
-        });
+        // The game's settings belong to the app, not to an instance: the picker is only for saves.
+        v.findViewById(R.id.btn_saves_import).setOnClickListener(b -> startImport(GameDataTransfer.SAVES));
+        v.findViewById(R.id.btn_settings_import).setOnClickListener(b -> startImport(GameDataTransfer.SETTINGS));
+        v.findViewById(R.id.btn_saves_export).setOnClickListener(b -> startExport(GameDataTransfer.SAVES));
+        v.findViewById(R.id.btn_settings_export).setOnClickListener(b -> startExport(GameDataTransfer.SETTINGS));
+    }
+
+    private void startImport(String what) {
+        kind = what;
+        if (saves() && current() == null) return;
+        pickImport.launch(new String[]{"application/zip", "application/x-zip-compressed", "application/octet-stream"});
+    }
+
+    private void startExport(String what) {
+        kind = what;
+        GameInstance gi = saves() ? current() : null;
+        if (saves() && gi == null) return;
+        exportFor = gi;
+        String who = saves() ? "_" + gi.getName().replaceAll("[^A-Za-z0-9._-]", "_") : "";
+        pickExport.launch("stormdroid_" + kind + who + "_"
+                + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(new java.util.Date())
+                + ".zip");
     }
 
     @Nullable

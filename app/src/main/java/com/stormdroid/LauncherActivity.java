@@ -37,6 +37,11 @@ public class LauncherActivity extends AppCompatActivity {
     private AppBarConfiguration appBarConfiguration;
     private final Handler ui = new Handler(Looper.getMainLooper());
 
+    /** The screens of the bottom bar: top level (the drawer, not a back arrow), and the bar shows only there. */
+    private static final int[] BOTTOM_NAV_DESTINATIONS = {
+            R.id.launcher_fragment, R.id.download_fragment, R.id.thunderstore_fragment,
+            R.id.transfer_fragment, R.id.projects_fragment};
+
     /**
      * A home-screen shortcut (InstanceShortcuts): start this instance right away, as a tap on its
      * Play button would, without showing the launcher first. Read by LauncherFragment.
@@ -95,15 +100,21 @@ public class LauncherActivity extends AppCompatActivity {
 
         setSupportActionBar(binding.appbar);
 
-        appBarConfiguration = new AppBarConfiguration.Builder(R.id.launcher_fragment)
+        appBarConfiguration = new AppBarConfiguration.Builder(BOTTOM_NAV_DESTINATIONS)
                 .setOpenableLayout(binding.drawerLayout)
                 .build();
 
         navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(binding.launcherNv, navController);
+        NavigationUI.setupWithNavController(binding.bottomNav, navController);
         // Refresh the toolbar menu on navigation so the "+" (add instance) shows only on the main screen.
-        navController.addOnDestinationChangedListener((c, dest, args) -> invalidateOptionsMenu());
+        navController.addOnDestinationChangedListener((c, dest, args) -> {
+            invalidateOptionsMenu();
+            boolean main = false;
+            for (int id : BOTTOM_NAV_DESTINATIONS) if (id == dest.getId()) main = true;
+            binding.bottomNav.setVisibility(main ? View.VISIBLE : View.GONE);
+        });
 
         binding.launcherNv.setNavigationItemSelectedListener(item -> {
             binding.drawerLayout.close();
@@ -117,11 +128,11 @@ public class LauncherActivity extends AppCompatActivity {
             } else if (id == R.id.action_download_game) {
                 navController.navigate(R.id.action_open_download);   // download the game from Steam
                 return true;
-            } else if (id == R.id.action_saves_transfer) {
-                navController.navigate(R.id.action_open_saves_transfer);   // import / export saves, one screen
+            } else if (id == R.id.action_mods) {
+                navController.navigate(R.id.action_open_mods);   // BepInEx switch and the installed mods
                 return true;
-            } else if (id == R.id.action_settings_transfer) {
-                navController.navigate(R.id.action_open_settings_transfer);
+            } else if (id == R.id.action_transfer) {
+                navController.navigate(R.id.action_open_transfer);   // saves and game settings, one screen
                 return true;
             } else if (id == R.id.action_edit_controls) {
                 // Controls are per instance: the editor asks which one when there are several.

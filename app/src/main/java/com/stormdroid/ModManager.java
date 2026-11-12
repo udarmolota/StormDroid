@@ -1,0 +1,672 @@
+package com.stormdroid;
+
+import android.content.Context;
+import android.net.Uri;
+import android.util.Log;
+
+import org.json.JSONObject;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+/**
+ * BepInEx mods for one game instance.
+ *
+ * <p>BepInEx itself ships inside the APK (assets/bepinex) and is copied into the instance's
+ * {@code BepInEx/core} when missing or older ({@link #ensureBepInEx}). Its root folder is where it
+ * looks for everything else, so plugins, configs and caches stay per instance.
+ *
+ * <p>A mod is one entry of {@code BepInEx/plugins}: a folder, or a loose .dll. Turning a mod off moves
+ * that entry to {@code BepInEx/plugins_off}, where BepInEx does not look. The list is always read from
+ * the file system, so mods a player drops in by hand show up too.
+ *
+ * <p>{@link #install} lays a Thunderstore-style zip out the way r2modman does for Against the Storm. Game files a
+ * mod overwrites (e.g. {@code Against the Storm_Data/Managed/...}) are backed up first and restored when the mod
+ * is deleted.
+ */
+public final class ModManager {
+    private static final String TAG = "StormDroid/Mods";
+
+    /** The bundled BepInEx release (from ValDroid); bump together with the asset file name. */
+    public static final String BEPINEX_VERSION = "5.4.2350";
+    private static final String BEPINEX_ASSET = "bepinex/BepInEx-" + BEPINEX_VERSION + ".zip";
+    private static final String VERSION_MARKER = ".stormdroid_bepinex_version";
+
+    private static final String PLUGINS = "plugins";
+    private static final String PLUGINS_OFF = "plugins_off";
+    private static final String BACKUP_DIR = ".stormdroid_backup";
+    /** Inside a mod folder: game-relative paths the mod replaced, one per line. */
+    private static final String GAME_FILES_LIST = ".stormdroid_game_files";
+    /** Inside a mod folder: its author, from the Thunderstore archive name it was installed from. */
+    private static final String AUTHOR_FILE = ".stormdroid_author";
+
+    private ModManager() {}
+
+    /** One installed mod as the Mods screen shows it. */
+    public static final class Mod {
+        public final String name;
+        public final String version;   // null when unknown
+        public final String author;    // null when unknown
+        public final boolean enabled;
+        final File location;           // folder or .dll, under plugins or plugins_off
+
+        Mod(String name, String version, String author, boolean enabled, File location) {
+            this.name = name; this.version = version; this.author = author; this.enabled = enabled;
+            this.location = location;
+        }
+    }
+
+    public static File bepinexDir(File gameDir) { return new File(gameDir, "BepInEx"); }
+
+    public static File preloader(File gameDir) {
+        return new File(bepinexDir(gameDir), "core/BepInEx.Preloader.dll");
+    }
+
+    // ---- BepInEx itself ------------------------------------------------------------------------
+
+    /**
+     * Makes sure the instance has the bundled BepInEx: copies {@code core/} from the APK when the
+     * version marker is missing or different, and the default {@code config/BepInEx.cfg} only when
+     * there is none (a player's own settings stay). Cheap when up to date: one small file read.
+     */
+    public static void ensureBepInEx(Context ctx, File gameDir) throws IOException {
+        File root = bepinexDir(gameDir);
+        File core = new File(root, "core");
+        File marker = new File(core, VERSION_MARKER);
+        mkdirs(new File(root, PLUGINS));
+        mkdirs(new File(root, PLUGINS_OFF));
+        if (BEPINEX_VERSION.equals(readSmall(marker)) && preloader(gameDir).isFile()) return;
+
+        Log.i(TAG, "Installing BepInEx " + BEPINEX_VERSION + " into " + root);
+        deleteRecursive(core);
+        mkdirs(core);
+        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(ctx.getAssets().open(BEPINEX_ASSET)))) {
+            ZipEntry e;
+            while ((e = zis.getNextEntry()) != null) {
+                if (e.isDirectory()) continue;
+                String name = e.getName().replace('\\', '/');
+                if (!isSafeRelative(name)) continue;
+                File out = new File(root, name);
+                if (name.startsWith("config/") && out.exists()) continue;
+                mkdirs(out.getParentFile());
+                copy(zis, out);
+            }
+        }
+        writeSmall(marker, BEPINEX_VERSION);
+    }
+
+    // ---- listing and switching ---------------------------------------------------------------
+
+    /** Every mod in plugins (enabled) and plugins_off (disabled), sorted by name. */
+    public static List<Mod> list(File gameDir) {
+        List<Mod> mods = new ArrayList<>();
+        File root = bepinexDir(gameDir);
+        addMods(mods, new File(root, PLUGINS), true);
+        addMods(mods, new File(root, PLUGINS_OFF), false);
+        Collections.sort(mods, (a, b) -> a.name.compareToIgnoreCase(b.name));
+        return mods;
+    }
+
+    public static int countEnabled(File gameDir) {
+        int n = 0;
+        for (Mod m : list(gameDir)) if (m.enabled) n++;
+        return n;
+    }
+
+    private static void addMods(List<Mod> into, File dir, boolean enabled) {
+        File[] entries = dir.listFiles();
+        if (entries == null) return;
+        for (File f : entries) {
+            if (f.isDirectory()) {
+                String[] nv = readManifest(new File(f, "manifest.json"));
+                into.add(new Mod(nv[0] != null ? nv[0] : f.getName(), nv[1], readAuthor(f), enabled, f));
+            } else if (f.getName().toLowerCase(Locale.ROOT).endsWith(".dll")) {
+                String n = f.getName();
+                into.add(new Mod(n.substring(0, n.length() - 4), null, null, enabled, f));
+            }
+        }
+    }
+
+    /** Moves the mod between plugins and plugins_off. */
+    public static boolean setEnabled(File gameDir, Mod mod, boolean enabled) {
+        if (mod.enabled == enabled) return true;
+        File target = new File(new File(bepinexDir(gameDir), enabled ? PLUGINS : PLUGINS_OFF), mod.location.getName());
+        mkdirs(target.getParentFile());
+        if (target.exists()) deleteRecursive(target);
+        boolean ok = mod.location.renameTo(target);
+        if (!ok) Log.w(TAG, "Could not move " + mod.location + " to " + target);
+        return ok;
+    }
+
+    /** Switches every listed mod on or off; returns how many could not be moved. */
+    public static int setAllEnabled(File gameDir, boolean enabled) {
+        int failed = 0;
+        for (Mod m : list(gameDir)) if (!setEnabled(gameDir, m, enabled)) failed++;
+        return failed;
+    }
+
+    /**
+     * A mod's author, when it can be told: the name of the Thunderstore archive it was installed from
+     * ("Author-Mod-1.0.0", AUTHOR_FILE), an "author" a manifest carries (our exports write one), or the
+     * owner in the manifest's website_url (github.com/owner/..., thunderstore.io/.../p/owner/...).
+     * Mods from Nexus carry none of these: null.
+     */
+    private static String readAuthor(File modDir) {
+        String a = readSmall(new File(modDir, AUTHOR_FILE));
+        if (a != null && !a.isEmpty()) return a;
+        String json = readSmall(new File(modDir, "manifest.json"));
+        if (json == null) return null;
+        try {
+            if (json.startsWith("\uFEFF")) json = json.substring(1);
+            JSONObject o = new JSONObject(json);
+            String author = o.optString("author", "").trim();
+            if (!author.isEmpty()) return author;
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("(?:github\\.com/|thunderstore\\.io/(?:c/[^/]+/)?p/)([A-Za-z0-9_.-]+)")
+                    .matcher(o.optString("website_url", ""));
+            return m.find() ? m.group(1) : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Deletes the mod and puts back the game files it replaced. */
+    public static void delete(File gameDir, Mod mod) {
+        restoreGameFiles(gameDir, mod.location);
+        deleteRecursive(mod.location);
+    }
+
+    // ---- installing a zip ----------------------------------------------------------------------
+
+    /**
+     * Installs a mod zip into the instance, enabled, and returns the mod's display name. Layout rules
+     * (after dropping a single wrapper folder the whole zip may sit in):
+     * <ul>
+     *   <li>{@code manifest.json} → kept in the mod folder (name and version for the list);
+     *       {@code icon.png}, README/CHANGELOG at the root → skipped;</li>
+     *   <li>{@code BepInEx/plugins/…}, {@code plugins/…}, loose files at the root → {@code BepInEx/plugins/<mod>/…};</li>
+     *   <li>{@code BepInEx/patchers/…}, {@code patchers/…} → {@code BepInEx/patchers/<mod>/…};</li>
+     *   <li>{@code BepInEx/config/…}, {@code config/…} → {@code BepInEx/config/…}, never over an existing file;</li>
+     *   <li>{@code BepInEx/core/…} → skipped (ours is bundled); other {@code BepInEx/…} → as is;</li>
+     *   <li>any other folder (e.g. {@code Against the Storm_Data/…}) → the game folder, replaced files backed up;</li>
+     *   <li>native Windows DLLs anywhere → skipped (a .NET assembly also ends in .dll and is kept).</li>
+     * </ul>
+     */
+    public static String install(Context ctx, Uri zip, File gameDir, String fallbackName) throws IOException {
+        byte[] data = readAll(ctx, zip);
+        List<String> names = entryNames(data);
+        String wrapper = commonWrapper(names);
+        // A pack of mods (exportZip): one folder per mod at the top, each with its manifest.
+        if (wrapper.isEmpty()) {
+            List<String> pack = packFolders(names);
+            if (pack != null) {
+                List<String> installed = new ArrayList<>();
+                for (String folder : pack) installed.add(install(data, folder, gameDir, folder.substring(0, folder.length() - 1)));
+                return String.join(", ", installed);
+            }
+        }
+        String modName = install(data, wrapper, gameDir, fallbackName);
+        // A Thunderstore archive is named Author-Mod-1.0.0: keep the author for the list.
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^([A-Za-z0-9_]+)-[A-Za-z0-9_]+-\\d+(?:\\.\\d+)+$")
+                .matcher(fallbackName != null ? fallbackName : "");
+        if (m.matches()) {
+            File modDir = new File(new File(bepinexDir(gameDir), PLUGINS), modName);
+            if (modDir.isDirectory()) writeSmall(new File(modDir, AUTHOR_FILE), m.group(1));
+        }
+        return modName;
+    }
+
+    /** The top folders of a pack (each holding a manifest.json, at least two), or null for a mod zip. */
+    private static List<String> packFolders(List<String> names) {
+        java.util.LinkedHashSet<String> tops = new java.util.LinkedHashSet<>();
+        for (String n : names) {
+            int s = n.indexOf('/');
+            if (s < 0) return null;   // a loose file at the top: a single mod's layout
+            tops.add(n.substring(0, s + 1));
+        }
+        if (tops.size() < 2) return null;
+        for (String t : tops) if (!names.contains(t + "manifest.json")) return null;
+        return new ArrayList<>(tops);
+    }
+
+    /** Installs the mod a zip holds under {@code wrapper} ("" = the whole zip). */
+    private static String install(byte[] data, String wrapper, File gameDir, String fallbackName) throws IOException {
+        String modName = null, version = null;
+        byte[] manifest = extractOne(data, wrapper + "manifest.json");
+        if (manifest != null) {
+            String[] nv = parseManifest(new String(manifest, StandardCharsets.UTF_8));
+            modName = nv[0]; version = nv[1];
+        }
+        if (modName == null || modName.isEmpty()) modName = fallbackName;
+        modName = sanitize(modName);
+        if (modName.isEmpty()) modName = "mod";
+
+        File root = bepinexDir(gameDir);
+        ensureDirs(root);
+        File modDir = new File(new File(root, PLUGINS), modName);
+        File offDir = new File(new File(root, PLUGINS_OFF), modName);
+        // An update replaces the previous copy wherever it was, and restores what it had replaced.
+        if (offDir.exists()) { restoreGameFiles(gameDir, offDir); deleteRecursive(offDir); }
+        if (modDir.exists()) { restoreGameFiles(gameDir, modDir); deleteRecursive(modDir); }
+        mkdirs(modDir);
+        File patchersDir = new File(new File(root, "patchers"), modName);
+        List<String> gameFiles = new ArrayList<>();
+        int written = 0;
+
+        try (ZipInputStream zis = new ZipInputStream(new java.io.ByteArrayInputStream(data))) {
+            ZipEntry e;
+            while ((e = zis.getNextEntry()) != null) {
+                if (e.isDirectory()) continue;
+                String path = e.getName().replace('\\', '/');
+                if (!path.startsWith(wrapper)) continue;
+                path = path.substring(wrapper.length());
+                if (path.isEmpty() || !isSafeRelative(path)) continue;
+                byte[] body = readEntry(zis);
+                if (isNativeWindowsBinary(path, body)) continue;
+
+                String lower = path.toLowerCase(Locale.ROOT);
+                int slash = path.indexOf('/');
+                String first = slash < 0 ? "" : lower.substring(0, slash);
+                String rest = slash < 0 ? path : path.substring(slash + 1);
+                File out;
+                if (slash < 0) {
+                    if (lower.equals("manifest.json")) out = new File(modDir, "manifest.json");
+                    else if (lower.equals("icon.png") || lower.startsWith("readme") || lower.startsWith("changelog")) continue;
+                    else out = new File(modDir, path);
+                } else if (first.equals("bepinex")) {
+                    int s2 = rest.indexOf('/');
+                    String sub = s2 < 0 ? "" : rest.substring(0, s2).toLowerCase(Locale.ROOT);
+                    String tail = s2 < 0 ? rest : rest.substring(s2 + 1);
+                    if (sub.equals("plugins")) out = new File(modDir, tail);
+                    else if (sub.equals("patchers")) out = new File(patchersDir, tail);
+                    else if (sub.equals("config")) { out = new File(new File(root, "config"), tail); if (out.exists()) continue; }
+                    else if (sub.equals("core")) continue;
+                    else out = new File(root, rest);
+                } else if (first.equals("plugins")) {
+                    out = new File(modDir, rest);
+                } else if (first.equals("patchers")) {
+                    out = new File(patchersDir, rest);
+                } else if (first.equals("config")) {
+                    out = new File(new File(root, "config"), rest);
+                    if (out.exists()) continue;
+                } else {
+                    // A game folder such as Against the Storm_Data/Managed: back up what is there first.
+                    out = new File(gameDir, path);
+                    if (out.isFile()) backupGameFile(gameDir, modName, path, out);
+                    gameFiles.add(path);
+                }
+                mkdirs(out.getParentFile());
+                try (OutputStream os = new FileOutputStream(out)) { os.write(body); }
+                written++;
+            }
+        }
+        if (!gameFiles.isEmpty()) writeSmall(new File(modDir, GAME_FILES_LIST), String.join("\n", gameFiles));
+        if (written == 0) {
+            deleteRecursive(modDir);
+            throw new IOException("Nothing to install in this archive");
+        }
+        Log.i(TAG, "Installed " + modName + (version != null ? " " + version : "") + ": " + written + " files");
+        return modName;
+    }
+
+    // ---- exporting ------------------------------------------------------------------------------
+
+    /**
+     * Writes the given mods into one zip, a folder per mod laid out as a mod archive is (manifest.json,
+     * plugins/, patchers/, the game files it replaced at their game paths), so {@link #install} takes
+     * the zip back as a pack. Mods without a manifest get one with their name. Returns the count.
+     */
+    public static int exportZip(File gameDir, List<Mod> mods, OutputStream rawOut) throws IOException {
+        java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(new java.io.BufferedOutputStream(rawOut));
+        java.util.Set<String> used = new java.util.HashSet<>();
+        int count = 0;
+        for (Mod m : mods) {
+            String base = m.location.isDirectory() ? m.location.getName() : sanitize(m.name);
+            String folder = base;
+            for (int n = 2; !used.add(folder.toLowerCase(Locale.ROOT)); n++) folder = base + "_" + n;
+            folder += "/";
+            File manifest = new File(m.location, "manifest.json");
+            String json = m.location.isDirectory() ? readSmall(manifest) : null;
+            if (json == null) {
+                JSONObject o = new JSONObject();
+                try {
+                    o.put("name", m.name);
+                    if (m.version != null) o.put("version_number", m.version);
+                    if (m.author != null) o.put("author", m.author);
+                } catch (org.json.JSONException ignored) {}
+                json = o.toString();
+            } else if (m.author != null && !json.contains("\"author\"")) {
+                try { json = new JSONObject(json).put("author", m.author).toString(); } catch (Exception ignored) {}
+            }
+            putEntry(zip, folder + "manifest.json", json.getBytes(StandardCharsets.UTF_8));
+            if (m.location.isDirectory()) {
+                addTree(zip, m.location, folder + "plugins/", true);
+                File patchers = new File(new File(bepinexDir(gameDir), "patchers"), m.location.getName());
+                if (patchers.isDirectory()) addTree(zip, patchers, folder + "patchers/", false);
+                String list = readSmall(new File(m.location, GAME_FILES_LIST));
+                if (list != null) {
+                    for (String rel : list.split("\n")) {
+                        rel = rel.trim();
+                        File f = new File(gameDir, rel);
+                        if (!rel.isEmpty() && isSafeRelative(rel) && f.isFile()) addFile(zip, f, folder + rel);
+                    }
+                }
+            } else {
+                addFile(zip, m.location, folder + "plugins/" + m.location.getName());
+            }
+            count++;
+        }
+        zip.finish();
+        zip.flush();
+        return count;
+    }
+
+    // ---- copying to another instance ------------------------------------------------------------
+
+    /** What {@link #copyMods} did, by mod name. */
+    public static final class CopyResult {
+        public final List<String> copied = new ArrayList<>();
+        public final List<String> alreadyThere = new ArrayList<>();
+        public final List<String> failed = new ArrayList<>();
+    }
+
+    public interface CopyProgress {
+        void onMod(String name, int index, int total);
+    }
+
+    /**
+     * Copies mods of one instance into another, as Zomdroid does. A mod is not one folder here
+     * (plugins, patchers, game files it replaced), so each goes the export way: into a zip in
+     * {@code tmpDir}, then installed from it, which also backs up the target's own game files. A mod
+     * the target already has (same name) is left as it is there. A mod that is off stays off. Config
+     * files the target does not have yet are copied too, so the mods keep their settings; the
+     * target's own configs are never overwritten. Not on the main thread.
+     */
+    public static CopyResult copyMods(Context ctx, File fromGame, List<Mod> mods, File toGame, File tmpDir,
+                                      CopyProgress progress) {
+        CopyResult result = new CopyResult();
+        java.util.Set<String> present = new java.util.HashSet<>();
+        for (Mod m : list(toGame)) present.add(m.name.toLowerCase(Locale.ROOT));
+        mkdirs(tmpDir);
+        for (int i = 0; i < mods.size(); i++) {
+            Mod m = mods.get(i);
+            if (progress != null) progress.onMod(m.name, i + 1, mods.size());
+            if (present.contains(m.name.toLowerCase(Locale.ROOT))) {
+                result.alreadyThere.add(m.name);
+                continue;
+            }
+            File zip = new File(tmpDir, "copy_" + i + ".zip");
+            try {
+                try (OutputStream out = new FileOutputStream(zip)) {
+                    exportZip(fromGame, Collections.singletonList(m), out);
+                }
+                String installed = install(ctx, Uri.fromFile(zip), toGame, m.name);
+                if (!m.enabled) {
+                    for (Mod t : list(toGame)) {
+                        if (t.enabled && t.location.getName().equals(installed)) { setEnabled(toGame, t, false); break; }
+                    }
+                }
+                present.add(m.name.toLowerCase(Locale.ROOT));
+                result.copied.add(m.name);
+            } catch (Exception e) {
+                Log.w(TAG, "Could not copy " + m.name, e);
+                result.failed.add(m.name);
+            } finally {
+                //noinspection ResultOfMethodCallIgnored
+                zip.delete();
+            }
+        }
+        if (!result.copied.isEmpty()) {
+            try {
+                copyMissing(new File(bepinexDir(fromGame), "config"), new File(bepinexDir(toGame), "config"));
+            } catch (IOException e) {
+                Log.w(TAG, "Could not copy the configs", e);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Files under {@code from} that {@code to} lacks, copied over; nothing existing is touched.
+     * BepInEx.cfg is the target's own BepInEx setup, never copied.
+     */
+    private static void copyMissing(File from, File to) throws IOException {
+        File[] kids = from.listFiles();
+        if (kids == null) return;
+        for (File k : kids) {
+            File out = new File(to, k.getName());
+            if (k.isDirectory()) {
+                copyMissing(k, out);
+            } else if (k.isFile() && !out.exists() && !k.getName().equalsIgnoreCase("BepInEx.cfg")) {
+                mkdirs(to);
+                try (InputStream in = new FileInputStream(k)) { copy(in, out); }
+            }
+        }
+    }
+
+    /** Every file under {@code dir}, at {@code prefix}; the mod folder's own bookkeeping left out. */
+    private static void addTree(java.util.zip.ZipOutputStream zip, File dir, String prefix, boolean modFolder) throws IOException {
+        File[] kids = dir.listFiles();
+        if (kids == null) return;
+        for (File k : kids) {
+            String n = k.getName();
+            if (modFolder && prefix.endsWith("plugins/") && (n.equals("manifest.json") || n.equals(GAME_FILES_LIST) || n.equals(AUTHOR_FILE)))
+                continue;
+            if (k.isDirectory()) addTree(zip, k, prefix + n + "/", false);
+            else addFile(zip, k, prefix + n);
+        }
+    }
+
+    private static void addFile(java.util.zip.ZipOutputStream zip, File f, String name) throws IOException {
+        zip.putNextEntry(new ZipEntry(name));
+        try (InputStream in = new FileInputStream(f)) {
+            byte[] buf = new byte[65536];
+            int n;
+            while ((n = in.read(buf)) > 0) zip.write(buf, 0, n);
+        }
+        zip.closeEntry();
+    }
+
+    private static void putEntry(java.util.zip.ZipOutputStream zip, String name, byte[] body) throws IOException {
+        zip.putNextEntry(new ZipEntry(name));
+        zip.write(body);
+        zip.closeEntry();
+    }
+
+    // ---- game file backups ---------------------------------------------------------------------
+
+    private static void backupGameFile(File gameDir, String modName, String rel, File current) throws IOException {
+        File backup = new File(new File(new File(bepinexDir(gameDir), BACKUP_DIR), modName), rel);
+        if (backup.exists()) return;   // keep the original from the first install, not a mod's copy
+        mkdirs(backup.getParentFile());
+        try (InputStream in = new FileInputStream(current)) { copy(in, backup); }
+    }
+
+    private static void restoreGameFiles(File gameDir, File modLocation) {
+        if (!modLocation.isDirectory()) return;
+        String list = readSmall(new File(modLocation, GAME_FILES_LIST));
+        if (list == null) return;
+        File backupRoot = new File(new File(bepinexDir(gameDir), BACKUP_DIR), modLocation.getName());
+        for (String rel : list.split("\n")) {
+            rel = rel.trim();
+            if (rel.isEmpty() || !isSafeRelative(rel)) continue;
+            File target = new File(gameDir, rel);
+            File backup = new File(backupRoot, rel);
+            if (backup.isFile()) {
+                mkdirs(target.getParentFile());
+                if (target.exists()) target.delete();
+                if (!backup.renameTo(target)) Log.w(TAG, "Could not restore " + target);
+            } else if (target.isFile()) {
+                target.delete();   // the mod added this file; nothing to put back
+            }
+        }
+        deleteRecursive(backupRoot);
+    }
+
+    // ---- helpers -------------------------------------------------------------------------------
+
+    /**
+     * A Windows PE image without a .NET (CLR) header: native code that cannot run here. A .NET
+     * assembly is also a PE file but carries the CLR data directory, and those are what mods are.
+     */
+    static boolean isNativeWindowsBinary(String path, byte[] b) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        if (!lower.endsWith(".dll") && !lower.endsWith(".exe")) return false;
+        if (b.length < 0x40 || b[0] != 'M' || b[1] != 'Z') return false;
+        int pe = le32(b, 0x3c);
+        if (pe < 0 || pe + 24 > b.length || b[pe] != 'P' || b[pe + 1] != 'E') return false;
+        int opt = pe + 24;
+        int magic = le16(b, opt);
+        int dirs = magic == 0x20b ? opt + 112 : opt + 96;   // PE32+ vs PE32
+        int clr = dirs + 14 * 8;                            // data directory 14 = CLR runtime header
+        if (clr + 8 > b.length) return true;
+        return le32(b, clr) == 0 && le32(b, clr + 4) == 0;
+    }
+
+    private static int le16(byte[] b, int o) { return (b[o] & 0xff) | (b[o + 1] & 0xff) << 8; }
+    private static int le32(byte[] b, int o) {
+        return (b[o] & 0xff) | (b[o + 1] & 0xff) << 8 | (b[o + 2] & 0xff) << 16 | (b[o + 3] & 0xff) << 24;
+    }
+
+    /** "Name With Spaces" → a folder name: no separators, no leading dots. */
+    private static String sanitize(String s) {
+        String out = s.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
+        while (out.startsWith(".")) out = out.substring(1);
+        return out.length() > 80 ? out.substring(0, 80) : out;
+    }
+
+    private static boolean isSafeRelative(String p) {
+        if (p.startsWith("/") || p.contains(":")) return false;
+        for (String part : p.split("/")) if (part.equals("..")) return false;
+        return true;
+    }
+
+    /** A single top-level folder every entry sits in (e.g. "MyMod-1.0/"), or "" when there is none. */
+    private static String commonWrapper(List<String> names) {
+        String top = null;
+        for (String n : names) {
+            int s = n.indexOf('/');
+            if (s < 0) return "";
+            String t = n.substring(0, s + 1);
+            if (top == null) top = t; else if (!top.equals(t)) return "";
+        }
+        if (top == null) return "";
+        String t = top.toLowerCase(Locale.ROOT);
+        // A zip holding only BepInEx/ or plugins/ is a layout, not a wrapper.
+        if (t.equals("bepinex/") || t.equals("plugins/") || t.equals("patchers/") || t.equals("config/")) return "";
+        return top;
+    }
+
+    private static List<String> entryNames(byte[] data) throws IOException {
+        List<String> names = new ArrayList<>();
+        try (ZipInputStream zis = new ZipInputStream(new java.io.ByteArrayInputStream(data))) {
+            ZipEntry e;
+            while ((e = zis.getNextEntry()) != null) if (!e.isDirectory()) names.add(e.getName().replace('\\', '/'));
+        }
+        if (names.isEmpty()) throw new IOException("Not a zip archive, or an empty one");
+        return names;
+    }
+
+    private static byte[] extractOne(byte[] data, String name) throws IOException {
+        try (ZipInputStream zis = new ZipInputStream(new java.io.ByteArrayInputStream(data))) {
+            ZipEntry e;
+            while ((e = zis.getNextEntry()) != null)
+                if (e.getName().replace('\\', '/').equalsIgnoreCase(name)) return readEntry(zis);
+        }
+        return null;
+    }
+
+    private static String[] readManifest(File f) {
+        String s = readSmall(f);
+        return s == null ? new String[2] : parseManifest(s);
+    }
+
+    /** {name, version_number} from a Thunderstore manifest.json; nulls when absent. */
+    private static String[] parseManifest(String json) {
+        try {
+            if (json.startsWith("﻿")) json = json.substring(1);
+            JSONObject o = new JSONObject(json);
+            String n = o.optString("name", "").replace('_', ' ').trim();
+            String v = o.optString("version_number", "").trim();
+            return new String[]{ n.isEmpty() ? null : n, v.isEmpty() ? null : v };
+        } catch (Exception e) {
+            return new String[2];
+        }
+    }
+
+    private static byte[] readAll(Context ctx, Uri uri) throws IOException {
+        try (InputStream in = ctx.getContentResolver().openInputStream(uri)) {
+            if (in == null) throw new IOException("Cannot open " + uri);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            byte[] buf = new byte[65536];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                bos.write(buf, 0, n);
+                if (bos.size() > 512L * 1024 * 1024) throw new IOException("Archive too large for a mod");
+            }
+            return bos.toByteArray();
+        }
+    }
+
+    private static byte[] readEntry(ZipInputStream zis) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] buf = new byte[65536];
+        int n;
+        while ((n = zis.read(buf)) > 0) bos.write(buf, 0, n);
+        return bos.toByteArray();
+    }
+
+    private static void copy(InputStream in, File out) throws IOException {
+        try (OutputStream os = new FileOutputStream(out)) {
+            byte[] buf = new byte[65536];
+            int n;
+            while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+        }
+    }
+
+    private static void ensureDirs(File root) {
+        mkdirs(new File(root, PLUGINS));
+        mkdirs(new File(root, PLUGINS_OFF));
+    }
+
+    private static void mkdirs(File d) {
+        if (d != null && !d.isDirectory() && !d.mkdirs()) Log.w(TAG, "Could not create " + d);
+    }
+
+    private static String readSmall(File f) {
+        if (!f.isFile() || f.length() > 1 << 20) return null;
+        try (RandomAccessFile r = new RandomAccessFile(f, "r")) {
+            byte[] b = new byte[(int) r.length()];
+            r.readFully(b);
+            return new String(b, StandardCharsets.UTF_8).trim();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static void writeSmall(File f, String s) throws IOException {
+        mkdirs(f.getParentFile());
+        try (OutputStream os = new FileOutputStream(f)) { os.write(s.getBytes(StandardCharsets.UTF_8)); }
+    }
+
+    static void deleteRecursive(File f) {
+        if (f == null || !f.exists()) return;
+        File[] kids = f.isDirectory() ? f.listFiles() : null;
+        if (kids != null) for (File k : kids) deleteRecursive(k);
+        if (!f.delete()) Log.w(TAG, "Could not delete " + f);
+    }
+}

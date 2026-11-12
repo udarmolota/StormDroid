@@ -139,6 +139,17 @@ public class InstanceSettings {
         return Math.min(100, eff) / 100f;
     }
 
+    // --- Mod support (BepInEx), the master switch on the Mods screen. Off by default: a player without
+    // mods starts exactly as before. Each mod's own on/off lives in the file system (BepInEx/plugins vs
+    // plugins_off, see ModManager), not here. ---
+    public boolean isModSupport() {
+        return p.getBoolean(pfx + "mod_support", false);
+    }
+
+    public void setModSupport(boolean v) {
+        p.edit().putBoolean(pfx + "mod_support", v).apply();
+    }
+
     /** Remove all stored keys for an instance (call when the instance is deleted). */
     public static void delete(String instanceName) {
         SharedPreferences p = LauncherPreferences.requireSingleton().getSharedPrefs();

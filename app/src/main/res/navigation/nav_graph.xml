@@ -25,24 +25,24 @@
         android:label="@string/nav_new_instance" />
 
     <fragment
-        android:id="@+id/saves_transfer_fragment"
+        android:id="@+id/transfer_fragment"
         android:name="com.stormdroid.fragments.DataTransferFragment"
-        android:label="@string/nav_saves_transfer">
-        <argument
-            android:name="kind"
-            app:argType="string"
-            android:defaultValue="saves" />
-    </fragment>
+        android:label="@string/transfer_title" />
 
     <fragment
-        android:id="@+id/settings_transfer_fragment"
-        android:name="com.stormdroid.fragments.DataTransferFragment"
-        android:label="@string/nav_settings_transfer">
-        <argument
-            android:name="kind"
-            app:argType="string"
-            android:defaultValue="settings" />
-    </fragment>
+        android:id="@+id/thunderstore_fragment"
+        android:name="com.stormdroid.fragments.ThunderstoreFragment"
+        android:label="@string/ts_menu" />
+
+    <fragment
+        android:id="@+id/mods_fragment"
+        android:name="com.stormdroid.fragments.ModsFragment"
+        android:label="@string/nav_mods" />
+
+    <fragment
+        android:id="@+id/projects_fragment"
+        android:name="com.stormdroid.fragments.ProjectsFragment"
+        android:label="@string/projects_title" />
 
     <fragment
         android:id="@+id/bug_report_fragment"
@@ -57,11 +57,11 @@
     <action android:id="@+id/action_open_download"
         app:destination="@id/download_fragment" />
 
-    <action android:id="@+id/action_open_saves_transfer"
-        app:destination="@id/saves_transfer_fragment" />
+    <action android:id="@+id/action_open_mods"
+        app:destination="@id/mods_fragment" />
 
-    <action android:id="@+id/action_open_settings_transfer"
-        app:destination="@id/settings_transfer_fragment" />
+    <action android:id="@+id/action_open_transfer"
+        app:destination="@id/transfer_fragment" />
 
     <action android:id="@+id/action_open_bug_report"
         app:destination="@id/bug_report_fragment" />

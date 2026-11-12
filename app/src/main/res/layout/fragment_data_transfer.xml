@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Import / export of saves or game settings (DataTransferFragment); titles and hints are set in code. -->
+<!-- Import / export (DataTransferFragment): one card for an instance's saves, one for the game's
+     settings, each with its own Import and Export buttons. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -9,16 +10,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp">
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_transfer_instance"
+            style="@style/AppTheme.TransferCard"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-            app:cardCornerRadius="12dp"
-            app:strokeWidth="0dp">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -30,23 +28,57 @@
                     style="@style/AppTheme.CardHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="@string/transfer_instance" />
+                    android:layout_marginBottom="6dp"
+                    android:text="@string/transfer_saves_title" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/transfer_instance"
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
 
                 <Spinner
                     android:id="@+id/sp_transfer_instance"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:text="@string/saves_transfer_import_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/saves_transfer_export_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_saves_import"
+                        style="@style/AppTheme.TransferButton"
+                        android:text="@string/transfer_import" />
+
+                    <Button
+                        android:id="@+id/btn_saves_export"
+                        style="@style/AppTheme.TransferButton.Outlined"
+                        android:text="@string/transfer_export" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            style="@style/AppTheme.TransferCard"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-            app:cardCornerRadius="12dp"
-            app:strokeWidth="0dp">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -55,60 +87,41 @@
                 android:padding="16dp">
 
                 <TextView
-                    android:id="@+id/tv_transfer_import_title"
                     style="@style/AppTheme.CardHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="6dp"
+                    android:text="@string/transfer_settings_title" />
 
                 <TextView
-                    android:id="@+id/tv_transfer_import_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:text="@string/settings_transfer_import_hint"
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
+
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
+                    android:text="@string/settings_transfer_export_hint"
                     android:textAppearance="?attr/textAppearanceBodySmall" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_transfer_import"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/transfer_import" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    android:orientation="horizontal">
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-            app:cardCornerRadius="12dp"
-            app:strokeWidth="0dp">
+                    <Button
+                        android:id="@+id/btn_settings_import"
+                        style="@style/AppTheme.TransferButton"
+                        android:text="@string/transfer_import" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tv_transfer_export_title"
-                    style="@style/AppTheme.CardHeader"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp" />
-
-                <TextView
-                    android:id="@+id/tv_transfer_export_hint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_transfer_export"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/transfer_export" />
+                    <Button
+                        android:id="@+id/btn_settings_export"
+                        style="@style/AppTheme.TransferButton.Outlined"
+                        android:text="@string/transfer_export" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

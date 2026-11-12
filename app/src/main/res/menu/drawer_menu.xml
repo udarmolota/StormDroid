@@ -11,6 +11,11 @@
             android:id="@+id/action_download_game"
             android:icon="@drawable/ic_steam"
             android:title="@string/nav_download_game" />
+        <!-- Mods (BepInEx): the master switch and the installed mods; the bottom bar has the catalog -->
+        <item
+            android:id="@+id/action_mods"
+            android:icon="@drawable/ic_nav_mods"
+            android:title="@string/nav_mods" />
     </group>
 
     <!-- 2) On-screen controls: the editor asks which instance when there are several. -->
@@ -27,13 +32,9 @@
             android:icon="@drawable/mt_icon_settings"
             android:title="@string/nav_settings" />
         <item
-            android:id="@+id/action_saves_transfer"
-            android:icon="@drawable/mt_icon_save"
-            android:title="@string/nav_saves_transfer" />
-        <item
-            android:id="@+id/action_settings_transfer"
-            android:icon="@drawable/mt_icon_tune"
-            android:title="@string/nav_settings_transfer" />
+            android:id="@+id/action_transfer"
+            android:icon="@drawable/ic_nav_transfer"
+            android:title="@string/transfer_title" />
     </group>
 
     <!-- 4) Diagnostics: the bug report screen sends the logs by email or saves them to a file -->

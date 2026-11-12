@@ -117,6 +117,40 @@ public final class NativeEngine {
         }
     }
 
+    /**
+     * Mods: the Mods screen's master switch (ported from ValDroid). The bundled BepInEx is refreshed in
+     * the instance and il2mono starts its preloader (bepinex.c). The DOORSTOP_* variables stand in for
+     * what Doorstop would derive from the game's executable, so BepInEx finds the game root, its own
+     * folder and the Managed folder. False when mods are off or BepInEx could not be set up.
+     */
+    private static boolean addMods(Context context, GameInstance instance, File gameDir, File dataDir, List<String> env) {
+        if (!instance.settings().isModSupport()) return false;
+        try {
+            com.stormdroid.ModManager.ensureBepInEx(context, gameDir);
+        } catch (IOException e) {
+            Log.e(TAG, "Mods: could not set up BepInEx, starting without mods", e);
+            return false;
+        }
+        env.add("STORMDROID_BEPINEX_PRELOADER=" + com.stormdroid.ModManager.preloader(gameDir).getAbsolutePath());
+        env.add("DOORSTOP_PROCESS_PATH=" + new File(gameDir, AtsGame.EXE).getAbsolutePath());
+        env.add("DOORSTOP_MANAGED_FOLDER_DIR=" + new File(dataDir, "Managed").getAbsolutePath());
+        Log.i(TAG, "Mods: BepInEx " + com.stormdroid.ModManager.BEPINEX_VERSION + ", "
+                + com.stormdroid.ModManager.countEnabled(gameDir) + " mod(s) enabled");
+        return true;
+    }
+
+    /** The enabled mods with their versions, for the launch config of a report. */
+    private static String enabledMods(File gameDir) {
+        StringBuilder sb = new StringBuilder();
+        for (com.stormdroid.ModManager.Mod m : com.stormdroid.ModManager.list(gameDir)) {
+            if (!m.enabled) continue;
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(m.name);
+            if (m.version != null) sb.append(' ').append(m.version);
+        }
+        return sb.length() > 0 ? sb.toString() : "none";
+    }
+
     private static Intent prepareOnce(Context context, GameInstance instance) throws IOException {
         File gameDir = new File(instance.getGamePath());
         File dataDir = new File(gameDir, AtsGame.DATA_DIR);
@@ -177,6 +211,7 @@ public final class NativeEngine {
         int[] renderSize = renderSize(context, is);
         if (renderSize == null) renderSize = landscapeScreenSize(context);
         env.add("STORMDROID_RENDER_SIZE=" + (renderSize != null ? renderSize[0] + "x" + renderSize[1] : ""));
+        boolean mods = addMods(context, instance, gameDir, dataDir, env);
         addUserEnvironment(is, env);
         Log.i(TAG, "native engine environment: " + launchSummary(env));
 
@@ -197,6 +232,9 @@ public final class NativeEngine {
                 + "fps cap       : " + (is.getFpsCap() > 0 ? is.getFpsCap() : 0) + " (0 = none)\n"
                 + "graphics      : profile written now " + graphics + " (0 = none, 1 = Low, 2 = Very low), matches "
                 + GameGraphics.detect(context) + "\n"
+                + "mods          : " + (mods ? "ON (BepInEx " + com.stormdroid.ModManager.BEPINEX_VERSION + ", "
+                        + com.stormdroid.ModManager.countEnabled(gameDir) + " enabled: " + enabledMods(gameDir) + ")"
+                        : (is.isModSupport() ? "off (BepInEx setup failed)" : "off")) + "\n"
                 + "extra env     : " + userEnvironmentSummary(is) + "\n"
                 + "unity args    : (see below)\n";
 
