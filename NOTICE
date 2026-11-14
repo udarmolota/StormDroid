@@ -101,6 +101,21 @@ bcdec                  MIT License or       Copyright (c) 2022 Sergii Kudlai;
 (in libvkshim.so)      the Unlicense        github.com/iOrange/bcdec. BC block decoder for the same
                                             conversion (vkshim/bc/etcpak/bcdec.h, license at its end)
 
+--- Bundled managed assemblies (APK assets, app/src/main/assets/bepinex) ---
+
+BepInEx 5               LGPL-2.1             Copyright (c) BepInEx contributors
+(BepInEx.dll,                                github.com/BepInEx/BepInEx. The mod loader, copied
+ BepInEx.Preloader.dll,                      unmodified into an instance when mods are switched on;
+ BepInEx.Harmony.dll)                        its source is available there, and it can be replaced
+                                             with any compatible build.
+HarmonyX                MIT License          Copyright (c) Andreas Pardeike, BepInEx contributors;
+(0Harmony*.dll,                              github.com/BepInEx/HarmonyX
+ HarmonyXInterop.dll)
+MonoMod                 MIT License          Copyright (c) 0x0ade and contributors;
+(MonoMod.*.dll)                              github.com/MonoMod/MonoMod
+Mono.Cecil              MIT License          Copyright (c) Jb Evain and contributors;
+(Mono.Cecil*.dll)                            github.com/jbevain/cecil
+
 libsteam_api64.so      StormDroid original work (GPL-3.0): an ARM64 stub that only exports the
 (arm64 stub)           Steamworks startup function names and answers "Steam is not running";
                        contains no Valve code (unity/src/main/cpp/steam_stub).
@@ -145,6 +160,12 @@ StormDroid logo and launcher icon (app/src/main/res/drawable/stormdroid_logo.png
 fan art in the style of Against the Storm (characters and setting by Eremite Games). The Android
 robot in it is reproduced or modified from work created and shared by Google and used according to
 terms described in the Creative Commons 3.0 Attribution License.
+
+Material icons (app/src/main/res/drawable/ic_nav_*.xml, ic_download.xml): Material Design icons by
+Google, Apache License 2.0.
+
+Reddit logo (app/src/main/res/drawable/ic_reddit.xml): a trademark of Reddit, Inc., used only to
+link to the project's community.
 
 Donate icon (app/src/main/res/drawable/ic_donate.xml): "Donate" by Edward Boatman
 from the Noun Project, licensed under CC BY 3.0.

@@ -5,9 +5,9 @@
 Vulkan graphics and touch controls.
 
 > [!NOTE]
-> StormDroid requires the Windows version of Against the Storm. Steam users can download the game they own
-> right in the app (the Steam Mobile app with Steam Guard confirms the login); you can also install your own
-> copy of the game as a ZIP.
+> StormDroid requires the Windows version of Against the Storm. Steam and GOG users can download the game
+> they own right in the app (on Steam, the Steam Mobile app with Steam Guard confirms the login); you can also
+> install your own copy of the game as a ZIP.
 
 > [!WARNING]
 > **The app is in beta.** It supports both main phone GPUs, **Snapdragon (Adreno)** and **Mali** (MediaTek,
@@ -21,12 +21,15 @@ Vulkan graphics and touch controls.
   for Vulkan, once per instance, in about half a minute
 - ✔️ **Mali support** — the game's PC textures are converted to a format the GPU reads while the game loads
 - ✔️ **Graphics profiles** — Low and Very low in the instance settings, written into the game's own settings
-- ✔️ **In-app Steam download** — the game is saved as a ZIP in *Download/StormDroid*; **Create an instance**
-  opens instance creation with it
+- ✔️ **In-app Steam and GOG download** — the game is saved as a ZIP in *Download/StormDroid*; **Create an
+  instance** opens instance creation with it
+- ✔️ **Steam DLCs** — the DLCs your Steam account owns are unlocked in the game (their content ships with it)
+- ✔️ **Steam Cloud saves** — get your PC saves onto the phone, or send the phone's saves back
+- ✔️ **Mods** — a Thunderstore catalog in the app; BepInEx is built in, switched on per instance
 - ✔️ **Install from your own ZIP** — the game folder from your PC, zipped
 - ✔️ **Editable on-screen touch controls** — a keyboard + mouse layout, move / resize / opacity, buttons
   bound to any key or mouse action, an icon pack (Q / E rotate the camera, R / N rotate buildings)
-- ✔️ **Save and settings import & export** — bring your settlement over from PC
+- ✔️ **Save and settings import & export** — bring your settlement over from PC as a ZIP
 - ✔️ **Against the Storm news** from Steam on the home screen
 - ✔️ **Bug reports** with logs, sent from your own email app
 - ✔️ Russian, Spanish, Portuguese and Simplified Chinese translations
@@ -38,13 +41,17 @@ the same approach as [RimDroid](https://github.com/udarmolota/RimDroid). A few h
 
 - **Tested on two devices** so far: Galaxy S25 Ultra (Snapdragon) and a Mali-G615 phone. Other phones should
   work; how well they play is still unknown — reports help.
+- **The GOG version is untested on a phone.** The GOG download works, but whether GOG's build of the game runs
+  here, and sees its DLCs, still needs a player who owns it there.
+- **Mods are experimental.** Many BepInEx mods should work, but not all of them; mods that bring their own
+  x86 libraries cannot load on a phone.
 
 ## System requirements
 
 - Android 11+, ARM64; an **Adreno (Snapdragon)** or **Mali** GPU (Xclipse not tested yet)
-- About **15 GB free storage** for the first install (download, ZIP and the installed game); the ZIP can be
-  deleted afterwards
-- A copy of Against the Storm you own (Windows version, e.g. on Steam)
+- About **15 GB free storage** for the first install (download, ZIP and the installed game); afterwards the
+  game takes about 7 GB and the ZIP can be deleted
+- A copy of Against the Storm you own (Windows version, e.g. on Steam or GOG)
 
 ## Roadmap
 
@@ -53,9 +60,12 @@ the same approach as [RimDroid](https://github.com/udarmolota/RimDroid). A few h
 - [x] Steam download
 - [x] Save / settings import & export
 - [x] **Mali GPUs**: the game's textures converted to a format they support
+- [x] **Mods** from Thunderstore, with BepInEx
+- [x] **Steam DLCs** and **Steam Cloud saves**
+- [x] **GOG** download
 - [ ] **Xclipse GPUs**: test them
-- [ ] **Cloud saves** with Steam
-- [ ] **GOG** download, maybe **Epic Games Store** later
+- [ ] The **GOG version** on a phone: test it, and its DLCs
+- [ ] Maybe **Epic Games Store** download later
 - [ ] Controls layout import & export
 - [ ] Optimization: frame rate, loading times, battery and heat
 
@@ -65,7 +75,8 @@ Against the Storm ships only for Windows and Direct3D 11. StormDroid runs the ga
 (2021.3) as Unity's **Android player**: the game's C# code runs on a native ARM64 build of Unity's Mono, and
 graphics go through your phone's GPU with Vulkan. The game's shaders are converted from Direct3D 11 to
 Vulkan on the phone by **ShaderDroid**, the launcher's shader converter. The on-screen controls are fed
-into the game's own input system as a keyboard and mouse.
+into the game's own input system as a keyboard and mouse. Mods load through **BepInEx**, which the launcher
+starts inside the game when mods are switched on.
 
 ## Build
 
@@ -89,7 +100,7 @@ into the game's own input system as a keyboard and mouse.
 
 | Path | What |
 |---|---|
-| `app/` | the launcher: instances, install from ZIP, Steam download, settings, controls editor |
+| `app/` | the launcher: instances, install from ZIP, Steam and GOG downloads, DLCs, cloud saves, mods, settings, controls editor |
 | `unity/` | the `:unity` module: `NativeUnityActivity` (own process), il2mono (`libil2cpp.so` replacement), vkshim |
 | `unity/prepared/` | Unity's binaries (git-ignored), made by `tools/unity/prepare_unity.sh` |
 | `tools/unity/` | `prepare_unity.sh`, `patch_libunity.py`, `xar_extract.py` |
@@ -115,11 +126,15 @@ News and discussion: [Reddit](https://www.reddit.com/r/UdarMolotaDev/) · TG: [u
 - [Unity](https://unity.com) Android player — the game's own engine, by Unity Technologies (proprietary, not in
   this repository)
 - [Mono (Unity fork)](https://github.com/Unity-Technologies/mono) — native ARM64 runtime and class libraries
-- [JavaSteam](https://github.com/Longi94/JavaSteam) — Steam login and downloads
+- [JavaSteam](https://github.com/Longi94/JavaSteam) — Steam login, downloads, DLCs and cloud saves
+- [BepInEx](https://github.com/BepInEx/BepInEx) (LGPL-2.1) — mod loading, with HarmonyX and MonoMod (MIT)
+- [Thunderstore](https://thunderstore.io/c/against-the-storm/) — the mod catalog
 - [Zomdroid](https://github.com/udarmolota/zomdroid) (MIT) — the on-screen controls layout model and the
-  controls editor are ported from it
-- [RimDroid](https://github.com/udarmolota/RimDroid) — sibling launcher; the Steam download and launcher screens
-  come from it
+  controls editor are ported from it; the bottom bar and the Projects screen come from it too
+- [RimDroid](https://github.com/udarmolota/RimDroid) — sibling launcher; the Steam download, the cloud saves,
+  the GOG sign-in and launcher screens come from it
+- [ValDroid](https://github.com/udarmolota/ValDroid) — sibling launcher; the mods screen and the Thunderstore
+  catalog come from it
 
 Full license texts: [NOTICE](NOTICE).
 
