@@ -43,6 +43,7 @@ import java.util.List;
 public class ModsFragment extends Fragment {
 
     private Spinner spInstance;
+    private int instanceOffset;   // spinner position of the first instance (a prompt comes first with several)
     private Switch swSupport;
     private TextView tvOffNote, tvEmpty;
     private LinearLayout llList, llActions;
@@ -87,12 +88,7 @@ public class ModsFragment extends Fragment {
         GameInstanceManager.requireSingleton().reload();
         instances.clear();
         instances.addAll(GameInstanceManager.requireSingleton().getInstances());
-        List<String> names = new ArrayList<>();
-        if (instances.isEmpty()) names.add(getString(R.string.no_instances));
-        for (GameInstance gi : instances) names.add(gi.getName());
-        ArrayAdapter<String> a = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
-        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spInstance.setAdapter(a);
+        instanceOffset = com.stormdroid.InstanceSpinner.fill(spInstance, instances, getString(R.string.no_instances));
         spInstance.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> p, View view, int pos, long id) { refresh(); }
             @Override public void onNothingSelected(AdapterView<?> p) {}
@@ -132,8 +128,7 @@ public class ModsFragment extends Fragment {
 
     @Nullable
     private GameInstance current() {
-        int i = spInstance == null ? -1 : spInstance.getSelectedItemPosition();
-        return (i >= 0 && i < instances.size()) ? instances.get(i) : null;
+        return com.stormdroid.InstanceSpinner.selected(spInstance, instances, instanceOffset);
     }
 
     /** Fills the switch, the warning and the list from the selected instance's settings and files. */

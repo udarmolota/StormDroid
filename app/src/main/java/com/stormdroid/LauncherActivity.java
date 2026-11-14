@@ -131,6 +131,9 @@ public class LauncherActivity extends AppCompatActivity {
             } else if (id == R.id.action_mods) {
                 navController.navigate(R.id.action_open_mods);   // BepInEx switch and the installed mods
                 return true;
+            } else if (id == R.id.action_cloud_saves) {
+                navController.navigate(R.id.action_open_cloud_saves);   // Steam Cloud saves, both ways
+                return true;
             } else if (id == R.id.action_transfer) {
                 navController.navigate(R.id.action_open_transfer);   // saves and game settings, one screen
                 return true;

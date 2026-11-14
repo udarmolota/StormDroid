@@ -360,8 +360,29 @@ static int32_t platform_override(void)
     return il2mono_cfg.runtime_platform;
 }
 
+// Application.version: on Android the player answers with the APK's versionName (the launcher's), but
+// the game writes its version into every save and compares it on load ("Old version detected"), and
+// the PC reads those saves through Steam Cloud. The launcher passes the game's own version instead.
+// Read when asked: the icalls are registered before the configuration is.
+typedef void* (*GetVersionFn)(void);
+static GetVersionFn g_orig_get_version;
+
+static void* app_version_override(void)
+{
+    const char* v = getenv("STORMDROID_GAME_VERSION");
+    if (v && *v)
+        return p_mono_string_new_wrapper(v);
+    return g_orig_get_version ? g_orig_get_version() : NULL;
+}
+
 static const void* override_icall(const char* name, const void* method)
 {
+    if (!strcmp(name, "UnityEngine.Application::get_version"))
+    {
+        g_orig_get_version = (GetVersionFn)method;
+        LOGI("icall override: %s -> STORMDROID_GAME_VERSION (the game's own version)", name);
+        return (const void*)app_version_override;
+    }
     if (!strcmp(name, "UnityEngine.Application::set_targetFrameRate"))
     {
         g_orig_set_target_frame_rate = (SetTargetFrameRateFn)method;

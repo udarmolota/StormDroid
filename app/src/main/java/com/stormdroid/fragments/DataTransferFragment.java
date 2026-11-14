@@ -40,6 +40,7 @@ public class DataTransferFragment extends Fragment {
 
     private String kind = GameDataTransfer.SAVES;   // what the file picker in flight is for
     private Spinner spInstance;
+    private int instanceOffset;   // spinner position of the first instance (a prompt comes first with several)
     private final List<GameInstance> instances = new ArrayList<>();
     private GameInstance exportFor;   // the instance an export in flight belongs to
 
@@ -65,30 +66,27 @@ public class DataTransferFragment extends Fragment {
         GameInstanceManager.requireSingleton().reload();
         instances.clear();
         instances.addAll(GameInstanceManager.requireSingleton().getInstances());
-        List<String> names = new ArrayList<>();
-        if (instances.isEmpty()) names.add(getString(R.string.transfer_no_instances));
-        for (GameInstance gi : instances) names.add(gi.getName());
-        ArrayAdapter<String> a = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
-        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spInstance.setAdapter(a);
+        instanceOffset = com.stormdroid.InstanceSpinner.fill(spInstance, instances, getString(R.string.transfer_no_instances));
 
         // The game's settings belong to the app, not to an instance: the picker is only for saves.
         v.findViewById(R.id.btn_saves_import).setOnClickListener(b -> startImport(GameDataTransfer.SAVES));
         v.findViewById(R.id.btn_settings_import).setOnClickListener(b -> startImport(GameDataTransfer.SETTINGS));
         v.findViewById(R.id.btn_saves_export).setOnClickListener(b -> startExport(GameDataTransfer.SAVES));
         v.findViewById(R.id.btn_settings_export).setOnClickListener(b -> startExport(GameDataTransfer.SETTINGS));
+        v.findViewById(R.id.btn_cloud_open).setOnClickListener(b ->
+                androidx.navigation.Navigation.findNavController(b).navigate(R.id.action_open_cloud_saves));
     }
 
     private void startImport(String what) {
         kind = what;
-        if (saves() && current() == null) return;
+        if (saves() && current() == null) { askForInstance(); return; }
         pickImport.launch(new String[]{"application/zip", "application/x-zip-compressed", "application/octet-stream"});
     }
 
     private void startExport(String what) {
         kind = what;
         GameInstance gi = saves() ? current() : null;
-        if (saves() && gi == null) return;
+        if (saves() && gi == null) { askForInstance(); return; }
         exportFor = gi;
         String who = saves() ? "_" + gi.getName().replaceAll("[^A-Za-z0-9._-]", "_") : "";
         pickExport.launch("stormdroid_" + kind + who + "_"
@@ -96,10 +94,13 @@ public class DataTransferFragment extends Fragment {
                 + ".zip");
     }
 
+    private void askForInstance() {
+        if (!instances.isEmpty()) Toast.makeText(requireContext(), R.string.choose_instance_first, Toast.LENGTH_SHORT).show();
+    }
+
     @Nullable
     private GameInstance current() {
-        int i = spInstance.getSelectedItemPosition();
-        return (i >= 0 && i < instances.size()) ? instances.get(i) : null;
+        return com.stormdroid.InstanceSpinner.selected(spInstance, instances, instanceOffset);
     }
 
     /** Importing replaces files: asked first, a stray tap must not do it. */

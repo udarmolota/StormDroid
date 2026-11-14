@@ -40,6 +40,11 @@
         android:label="@string/nav_mods" />
 
     <fragment
+        android:id="@+id/cloud_saves_fragment"
+        android:name="com.stormdroid.fragments.CloudSavesFragment"
+        android:label="@string/nav_cloud_saves" />
+
+    <fragment
         android:id="@+id/projects_fragment"
         android:name="com.stormdroid.fragments.ProjectsFragment"
         android:label="@string/projects_title" />
@@ -59,6 +64,9 @@
 
     <action android:id="@+id/action_open_mods"
         app:destination="@id/mods_fragment" />
+
+    <action android:id="@+id/action_open_cloud_saves"
+        app:destination="@id/cloud_saves_fragment" />
 
     <action android:id="@+id/action_open_transfer"
         app:destination="@id/transfer_fragment" />

@@ -334,4 +334,44 @@
     <string name="download_dlcs_owned">DLCs unlocked in the game: %1$s</string>
     <string name="dlc_keepers_of_the_stone" translatable="false">Keepers of the Stone</string>
     <string name="dlc_nightwatchers" translatable="false">Nightwatchers</string>
+    <!-- Steam Cloud saves (ported from RimDroid). -->
+    <string name="nav_cloud_saves">Steam Cloud saves</string>
+    <string name="cloud_saves_title">Steam Cloud saves</string>
+    <string name="cloud_saves_hint">If you also play Against the Storm on a PC through Steam, your saves are kept in Steam Cloud: get them onto the phone, or send the phone\'s saves back.\n\nSigning in is confirmed in the Steam Mobile app with Steam Guard turned on. The password goes straight to Steam and is never stored here.</string>
+    <string name="cloud_saves_user">Steam username</string>
+    <string name="cloud_saves_pass">Steam password</string>
+    <string name="cloud_saves_instance">Instance</string>
+    <string name="cloud_saves_dir_pull">From cloud</string>
+    <string name="cloud_saves_dir_push">To cloud</string>
+    <string name="cloud_saves_pull">Get saves from Steam Cloud</string>
+    <string name="cloud_saves_push">Send saves to Steam Cloud</string>
+    <string name="cloud_saves_pull_note">Every save in your cloud is downloaded first. The saves belong together (progress, world, settlement), so they replace this instance\'s saves as a whole, after one question; the old ones are kept in a backup folder.</string>
+    <string name="cloud_saves_push_note">The cloud then holds exactly this instance\'s saves, and your PC loads them on its next sync. You are asked once before anything is replaced. Close the game on both devices first.</string>
+    <string name="choose_instance_prompt">— Choose an instance —</string>
+    <string name="choose_instance_first">Choose an instance first</string>
+    <string name="cloud_saves_no_instances">No instances yet</string>
+    <string name="cloud_saves_need_login">Enter your Steam username and password</string>
+    <string name="cloud_saves_log_connecting">Connecting to Steam…</string>
+    <string name="cloud_saves_log_placed">Copied in: %1$s</string>
+    <string name="cloud_saves_place_done">Done: %1$d copied in, %2$d left as they were.</string>
+    <string name="cloud_saves_replace_title">Replace the saves on this phone?</string>
+    <string name="cloud_saves_replace_msg">The cloud saves replace this instance\'s saves as a whole.\n\nOn this phone: %1$s\nIn the cloud: %2$s\n%3$s\n\nThe saves on this phone are kept in a backup folder first.</string>
+    <string name="cloud_saves_replace_cancelled">Cancelled: the saves on this phone were not changed.</string>
+    <string name="cloud_saves_backup_done">The saves that were on this phone are in %1$s</string>
+    <string name="cloud_saves_clash_cloud_newer">The cloud saves are newer.</string>
+    <string name="cloud_saves_clash_local_newer">The saves on this phone are newer.</string>
+    <string name="cloud_saves_clash_replace">Use the cloud saves</string>
+    <string name="cloud_saves_clash_in_cloud">in the cloud: %1$s</string>
+    <string name="cloud_saves_clash_on_phone">on this phone: %1$s</string>
+    <string name="cloud_saves_push_confirm_title">Send saves to the cloud?</string>
+    <string name="cloud_saves_push_confirm_replace">The cloud\'s saves will be REPLACED by this phone\'s, and your PC will load these next:\n%1$s\n\nMake sure the game is closed on both devices.</string>
+    <string name="cloud_saves_push_replace">Replace them</string>
+    <string name="cloud_saves_code">Steam Guard code</string>
+    <string name="cloud_saves_code_email">Code emailed to %1$s</string>
+    <string name="cloud_saves_code_title">Enter the Steam Guard code</string>
+    <string name="cloud_saves_code_wrong">Code incorrect, try again</string>
+    <string name="cloud_saves_keepalive">Syncing saves with Steam: you can switch to Steam Mobile to approve</string>
+    <string name="transfer_cloud_title">Steam Cloud</string>
+    <string name="transfer_cloud_hint">Get your PC saves from Steam Cloud, or send this phone\'s saves there.</string>
+    <string name="transfer_cloud_open">Open</string>
 </resources>

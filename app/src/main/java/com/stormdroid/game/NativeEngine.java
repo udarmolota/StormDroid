@@ -139,6 +139,30 @@ public final class NativeEngine {
         return true;
     }
 
+    /**
+     * The game's version (PlayerSettings.bundleVersion, e.g. "1.11.2R") from its globalgamemanagers: the
+     * first length-prefixed string there that reads as a version. The Unity version ("2021.3.45f2") comes
+     * much later in the file. Null when none is found.
+     */
+    @androidx.annotation.Nullable
+    static String gameVersion(File dataDir) {
+        File ggm = new File(dataDir, "globalgamemanagers");
+        byte[] head = new byte[64 * 1024];
+        int n;
+        try (java.io.FileInputStream in = new java.io.FileInputStream(ggm)) {
+            n = in.read(head);
+        } catch (IOException e) {
+            return null;
+        }
+        for (int i = 0; i + 4 < n; i++) {
+            int len = (head[i] & 0xff) | (head[i + 1] & 0xff) << 8 | (head[i + 2] & 0xff) << 16 | (head[i + 3] & 0xff) << 24;
+            if (len < 3 || len > 32 || i + 4 + len > n) continue;
+            String s = new String(head, i + 4, len, StandardCharsets.US_ASCII);
+            if (s.matches("[0-9]+(\\.[0-9]+)+[A-Za-z0-9]*") && !s.matches("20[0-9]{2}\\..*")) return s;
+        }
+        return null;
+    }
+
     /** The enabled mods with their versions, for the launch config of a report. */
     private static String enabledMods(File gameDir) {
         StringBuilder sb = new StringBuilder();
@@ -213,6 +237,10 @@ public final class NativeEngine {
         env.add("STORMDROID_RENDER_SIZE=" + (renderSize != null ? renderSize[0] + "x" + renderSize[1] : ""));
         // The DLCs the player's Steam account owns (checked on the Download screen): their content is in
         // the game already, the input bridge tells the game they are owned. DLCType flags.
+        // The game's own version for Application.version (il2mono): the Android player would report the
+        // APK's, and the game writes its version into every save, which the PC reads through Steam Cloud.
+        String gameVersion = gameVersion(dataDir);
+        if (gameVersion != null) env.add("STORMDROID_GAME_VERSION=" + gameVersion);
         int ownedDlcs = com.stormdroid.LauncherPreferences.requireSingleton().getOwnedDlcs();
         if (ownedDlcs > 0) env.add("STORMDROID_OWNED_DLCS=" + ownedDlcs);
         boolean mods = addMods(context, instance, gameDir, dataDir, env);
@@ -236,6 +264,7 @@ public final class NativeEngine {
                 + "fps cap       : " + (is.getFpsCap() > 0 ? is.getFpsCap() : 0) + " (0 = none)\n"
                 + "graphics      : profile written now " + graphics + " (0 = none, 1 = Low, 2 = Very low), matches "
                 + GameGraphics.detect(context) + "\n"
+                + "game version  : " + (gameVersion != null ? gameVersion : "not found (the APK's is used)") + "\n"
                 + "dlcs          : " + (ownedDlcs < 0 ? "not checked" : ownedDlcs) + " (1 = Keepers of the Stone, 2 = Nightwatchers)\n"
                 + "mods          : " + (mods ?"ON (BepInEx " + com.stormdroid.ModManager.BEPINEX_VERSION + ", "
                         + com.stormdroid.ModManager.countEnabled(gameDir) + " enabled: " + enabledMods(gameDir) + ")"

@@ -35,6 +35,11 @@
             android:id="@+id/action_transfer"
             android:icon="@drawable/ic_nav_transfer"
             android:title="@string/transfer_title" />
+        <!-- Steam Cloud saves: get the PC's saves, or send the phone's (CloudSavesFragment) -->
+        <item
+            android:id="@+id/action_cloud_saves"
+            android:icon="@drawable/ic_steam"
+            android:title="@string/nav_cloud_saves" />
     </group>
 
     <!-- 4) Diagnostics: the bug report screen sends the logs by email or saves them to a file -->
