@@ -430,18 +430,32 @@ public final class NativeEngine {
         final String bridge = BRIDGE;
         File archive = new File(workDir, "data.zip");
         File stampFile = new File(workDir, "data.zip.stamp");
-        List<String> gameFiles = new ArrayList<>();
-        listFiles(dataDir, "", gameFiles);
+        File movedFile = new File(workDir, MOVED_LIST);
+        java.util.Map<String, long[]> moved = readMoved(movedFile);
+        // The data files: those on disk, and the big ones that live only in the archive (see moveIntoArchive).
+        java.util.TreeSet<String> all = new java.util.TreeSet<>();
+        List<String> onDisk = new ArrayList<>();
+        listFiles(dataDir, "", onDisk);
+        all.addAll(onDisk);
+        all.addAll(moved.keySet());
         long stamp = apkStamp;
-        for (String rel : gameFiles) {
+        for (String rel : all) {
             if (isExcluded(rel)) continue;
             File f = new File(dataDir, rel);
-            stamp = stamp * 31 + f.length() * 7 + f.lastModified() + (f.getParentFile().equals(dataDir) ? 0 : 1);
+            long[] m = f.isFile() ? null : moved.get(rel);
+            long length = m != null ? m[0] : f.length(), modified = m != null ? m[1] : f.lastModified();
+            stamp = stamp * 31 + length * 7 + modified + (rel.contains("/") ? 1 : 0);
         }
-        if (archive.isFile() && readStamp(stampFile) == stamp) return archive;
+        if (archive.isFile() && readStamp(stampFile) == stamp) {
+            moveIntoArchive(dataDir, archive, movedFile, moved);
+            return archive;
+        }
 
         File tmp = new File(workDir, "data.zip.tmp");
         AssetManager assets = context.getAssets();
+        // A file kept only in the archive is copied from the old archive into the new one; one on disk
+        // wins over it (a mod may have replaced it).
+        java.util.zip.ZipFile old = archive.isFile() && !moved.isEmpty() ? new java.util.zip.ZipFile(archive) : null;
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(tmp))) {
             if (!new File(dataDir, "ScriptingAssemblies.json").isFile()
                     || !new File(dataDir, "RuntimeInitializeOnLoads.json").isFile())
@@ -455,9 +469,13 @@ public final class NativeEngine {
                 }
                 putStored(zip, "assets/bin/Data/" + rel, bytes);
             }
-            for (String rel : gameFiles) {
+            for (String rel : all) {
                 if (isExcluded(rel)) continue;
                 File file = new File(dataDir, rel);
+                if (!file.isFile()) {
+                    copyStoredEntry(zip, old, "assets/bin/Data/" + rel);
+                    continue;
+                }
                 if (rel.equals("ScriptingAssemblies.json"))
                     putStored(zip, "assets/bin/Data/" + rel, addBridgeAssembly(readFile(file), bridge));
                 else if (rel.equals("RuntimeInitializeOnLoads.json"))
@@ -468,12 +486,112 @@ public final class NativeEngine {
             try (InputStream in = assets.open(MANAGED_OVERRIDES_ASSETS + "/" + bridge + ".dll")) {
                 putStored(zip, "assets/bin/Data/Managed/" + bridge + ".dll", readAll(in));
             }
+        } catch (IOException e) {
+            //noinspection ResultOfMethodCallIgnored
+            tmp.delete();
+            throw e;
+        } finally {
+            if (old != null) old.close();
         }
         if (archive.exists() && !archive.delete()) throw new IOException("cannot replace " + archive);
         if (!tmp.renameTo(archive)) throw new IOException("cannot rename " + tmp);
         writeStamp(stampFile, stamp);
         Log.i(TAG, "built " + archive + " (" + archive.length() / (1024 * 1024) + " MB)");
+        moveIntoArchive(dataDir, archive, movedFile, moved);
         return archive;
+    }
+
+    /**
+     * Files of the data folder at least this big live only in data.zip once it holds them: the archive is
+     * the player's copy of the folder, and keeping both doubled the space an instance takes (about 3.4 GB
+     * of Against the Storm's 7). Small files stay: the launcher's own checks read some of them
+     * (globalgamemanagers, the assembly manifests) and they hardly count.
+     */
+    private static final long MOVE_MIN_BYTES = 16L * 1024 * 1024;
+    /** Lines "relative path TAB length TAB lastModified" of the files that live only in the archive. */
+    private static final String MOVED_LIST = "data.zip.moved";
+
+    /**
+     * Removes the big data files the archive now holds, recording each first (so the archive's stamp still
+     * sees them, and a rebuild copies them from the old archive). Only files whose archive entry has the
+     * same size are removed.
+     */
+    private static void moveIntoArchive(File dataDir, File archive, File movedFile, java.util.Map<String, long[]> moved) {
+        List<String> onDisk = new ArrayList<>();
+        listFiles(dataDir, "", onDisk);
+        List<File> remove = new ArrayList<>();
+        try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(archive)) {
+            for (String rel : onDisk) {
+                if (isExcluded(rel)) continue;
+                File f = new File(dataDir, rel);
+                if (f.length() < MOVE_MIN_BYTES) continue;
+                ZipEntry e = zip.getEntry("assets/bin/Data/" + rel);
+                if (e == null || e.getSize() != f.length()) continue;
+                moved.put(rel, new long[] { f.length(), f.lastModified() });
+                remove.add(f);
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "data archive not checked, the data files stay: " + e);
+            return;
+        }
+        if (remove.isEmpty()) return;
+        try {
+            writeMoved(movedFile, moved);
+        } catch (IOException e) {
+            Log.w(TAG, "could not record the moved data files, they stay: " + e);
+            return;
+        }
+        long freed = 0;
+        for (File f : remove) {
+            long len = f.length();
+            if (f.delete()) freed += len;
+        }
+        Log.i(TAG, "data files kept only in the archive: " + remove.size() + ", " + (freed >> 20) + " MB freed");
+    }
+
+    private static java.util.Map<String, long[]> readMoved(File f) {
+        java.util.Map<String, long[]> out = new java.util.HashMap<>();
+        if (!f.isFile()) return out;
+        try {
+            for (String line : new String(readFile(f), StandardCharsets.UTF_8).split("\n")) {
+                String[] p = line.split("\t");
+                if (p.length == 3) out.put(p[0], new long[] { Long.parseLong(p[1].trim()), Long.parseLong(p[2].trim()) });
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "moved list unreadable: " + e);
+        }
+        return out;
+    }
+
+    private static void writeMoved(File f, java.util.Map<String, long[]> moved) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        for (java.util.Map.Entry<String, long[]> e : new java.util.TreeMap<>(moved).entrySet())
+            sb.append(e.getKey()).append('\t').append(e.getValue()[0]).append('\t').append(e.getValue()[1]).append('\n');
+        File tmp = new File(f.getPath() + ".tmp");
+        try (FileOutputStream out = new FileOutputStream(tmp)) {
+            out.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+            out.getFD().sync();
+        }
+        if (!tmp.renameTo(f)) throw new IOException("cannot rename " + tmp);
+    }
+
+    /** One stored entry of the old archive, copied as it is (it was retagged when it went in). */
+    private static void copyStoredEntry(ZipOutputStream zip, java.util.zip.ZipFile old, String name) throws IOException {
+        ZipEntry src = old != null ? old.getEntry(name) : null;
+        if (src == null)
+            throw new IOException("the game's data file " + name + " is missing: add the instance again from its archive");
+        ZipEntry entry = new ZipEntry(name);
+        entry.setMethod(ZipEntry.STORED);
+        entry.setSize(src.getSize());
+        entry.setCompressedSize(src.getSize());
+        entry.setCrc(src.getCrc());
+        zip.putNextEntry(entry);
+        byte[] buf = new byte[1 << 16];
+        try (InputStream in = old.getInputStream(src)) {
+            int n;
+            while ((n = in.read(buf)) > 0) zip.write(buf, 0, n);
+        }
+        zip.closeEntry();
     }
 
     // Modify only the generated archive; the player's original manifests and game DLLs stay intact.
