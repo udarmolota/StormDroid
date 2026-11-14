@@ -11,6 +11,11 @@
             android:id="@+id/action_download_game"
             android:icon="@drawable/ic_steam"
             android:title="@string/nav_download_game" />
+        <!-- The game from GOG (Galaxy's content system): DownloadFragment with source = gog -->
+        <item
+            android:id="@+id/action_download_gog"
+            android:icon="@drawable/ic_download"
+            android:title="@string/nav_download_gog" />
         <!-- Mods (BepInEx): the master switch and the installed mods; the bottom bar has the catalog -->
         <item
             android:id="@+id/action_mods"

@@ -359,4 +359,18 @@
     <string name="transfer_cloud_title">Steam Cloud</string>
     <string name="transfer_cloud_hint">Trae las partidas del PC desde Steam Cloud o envía allí las de este teléfono.</string>
     <string name="transfer_cloud_open">Abrir</string>
+    <string name="gog_title">GOG</string>
+    <string name="gog_signed_in">Sesión iniciada en GOG. Se descarga la versión de Windows del juego con los DLC de tu cuenta de GOG.</string>
+    <string name="gog_signed_out">¿Compraste el juego en GOG? Inicia sesión para descargarlo. Las cuentas vinculadas (Google y otras) no funcionan aquí: usa tu contraseña de GOG.</string>
+    <string name="gog_sign_in">Iniciar sesión</string>
+    <string name="gog_login_title">Iniciar sesión en GOG</string>
+    <string name="gog_sign_out">Cerrar sesión</string>
+    <string name="gog_download">Descargar</string>
+    <string name="gog_product_hint">Avanzado: ID de producto de GOG (vacío = Against the Storm)</string>
+    <string name="gog_login_note">Inicia sesión con tu correo y contraseña de GOG. La contraseña se queda en la página de GOG; StormDroid mantiene la sesión hasta que la cierres o cierres la aplicación.</string>
+    <string name="gog_login_finishing">Terminando el inicio de sesión…</string>
+    <string name="gog_login_failed">No se pudo iniciar sesión en GOG: %1$s</string>
+    <string name="gog_login_ok">Sesión iniciada en GOG</string>
+    <string name="nav_download_gog">Descargar de GOG</string>
+    <string name="gog_download_title">Descargar Against the Storm de GOG</string>
 </resources>

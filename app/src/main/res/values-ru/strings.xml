@@ -357,4 +357,18 @@
     <string name="transfer_cloud_title">Steam Cloud</string>
     <string name="transfer_cloud_hint">Заберите сохранения с ПК из Steam Cloud или отправьте туда сохранения с телефона.</string>
     <string name="transfer_cloud_open">Открыть</string>
+    <string name="gog_title">GOG</string>
+    <string name="gog_signed_in">Вход в GOG выполнен. Скачивается Windows-версия игры с DLC, которые есть на вашем аккаунте GOG.</string>
+    <string name="gog_signed_out">Купили игру на GOG? Войдите, чтобы скачать её. Вход через привязанные аккаунты (Google и другие) здесь не работает: используйте пароль GOG.</string>
+    <string name="gog_sign_in">Войти</string>
+    <string name="gog_login_title">Войти в GOG</string>
+    <string name="gog_sign_out">Выйти</string>
+    <string name="gog_download">Скачать</string>
+    <string name="gog_product_hint">Дополнительно: id продукта GOG (пусто = Against the Storm)</string>
+    <string name="gog_login_note">Войдите с почтой и паролем GOG. Пароль остаётся на странице GOG; StormDroid помнит вход, пока вы не выйдете или не закроете приложение.</string>
+    <string name="gog_login_finishing">Завершаем вход…</string>
+    <string name="gog_login_failed">Не удалось войти в GOG: %1$s</string>
+    <string name="gog_login_ok">Вход в GOG выполнен</string>
+    <string name="nav_download_gog">Скачать с GOG</string>
+    <string name="gog_download_title">Скачать Against the Storm с GOG</string>
 </resources>

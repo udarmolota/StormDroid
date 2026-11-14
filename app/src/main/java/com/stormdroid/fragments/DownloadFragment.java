@@ -40,7 +40,9 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
     private EditText etUser, etPass, etManifest;
     private Button btnStart, btnCancel, btnCreateInstance, btnCheckDlc;
     private ProgressBar progress;
-    private TextView tvStatus, tvDlcs;
+    private TextView tvStatus, tvDlcs, tvGogState;
+    private com.google.android.material.textfield.TextInputEditText etGogProduct;
+    private Button btnGogSignIn, btnGogDownload;
     private android.content.Context appCtx;   // for the keep-alive service (valid even if detached)
 
     @Override
@@ -66,6 +68,24 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
         btnCheckDlc = v.findViewById(R.id.btn_dl_check_dlc);
         tvDlcs = v.findViewById(R.id.tv_dl_dlcs);
         btnCheckDlc.setOnClickListener(view -> checkDlcs());
+        // One screen class for both stores: the drawer's GOG item opens it with source = gog.
+        boolean gog = getArguments() != null && "gog".equals(getArguments().getString("source"));
+        v.findViewById(R.id.section_steam).setVisibility(gog ? View.GONE : View.VISIBLE);
+        v.findViewById(R.id.section_gog).setVisibility(gog ? View.VISIBLE : View.GONE);
+        tvGogState = v.findViewById(R.id.tv_gog_state);
+        etGogProduct = v.findViewById(R.id.et_gog_product);
+        btnGogSignIn = v.findViewById(R.id.btn_gog_sign_in);
+        btnGogDownload = v.findViewById(R.id.btn_gog_download);
+        btnGogSignIn.setOnClickListener(view -> {
+            if (com.stormdroid.GogAuth.isSignedIn()) {
+                com.stormdroid.GogAuth.signOut();
+                showGog();
+            } else {
+                androidx.navigation.Navigation.findNavController(view).navigate(R.id.action_open_gog_login);
+            }
+        });
+        btnGogDownload.setOnClickListener(view -> startGog());
+        showGog();
         showDlcs();
         btnCancel.setOnClickListener(view -> confirmCancel());
 
@@ -157,6 +177,41 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
         tvDlcs.setText(mask == 0 ? getString(R.string.download_dlcs_none) : getString(R.string.download_dlcs_owned, names));
     }
 
+    /** The GOG part: signed in or not (the token lives only as long as the app's process). */
+    private void showGog() {
+        if (tvGogState == null) return;
+        boolean in = com.stormdroid.GogAuth.isSignedIn();
+        tvGogState.setText(in ? R.string.gog_signed_in : R.string.gog_signed_out);
+        btnGogSignIn.setText(in ? R.string.gog_sign_out : R.string.gog_sign_in);
+        btnGogDownload.setEnabled(in && !SteamDownloadState.get().isDownloading());
+    }
+
+    /** Download the Windows build from GOG (Galaxy's content system): the game, or a product id for tests. */
+    private void startGog() {
+        if (SteamDownloadState.get().isDownloading() || !com.stormdroid.GogAuth.isSignedIn()) return;
+        if (!StorageAccess.hasAllFilesAccess()) {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireActivity())
+                    .setTitle(R.string.download_storage_title)
+                    .setMessage(R.string.download_storage_message)
+                    .setPositiveButton(R.string.download_storage_grant, (d, w) -> StorageAccess.requestAllFilesAccess(requireActivity()))
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+            return;
+        }
+        long product = com.stormdroid.GogGalaxyDownloader.ATS_PRODUCT_ID;
+        try {
+            String t = text(etGogProduct);
+            if (!t.isEmpty()) product = Long.parseLong(t);
+        } catch (NumberFormatException ignored) { /* blank/invalid -> the game */ }
+        SteamDownloadState st = SteamDownloadState.get();
+        com.stormdroid.GogGalaxyDownloader dl = new com.stormdroid.GogGalaxyDownloader(product, st);
+        st.begin(appCtx);
+        st.onProgress(getString(R.string.download_space_note));
+        st.setActive(dl);
+        beginUi();
+        new Thread(dl, "sd-gog-download").start();
+    }
+
     private void confirmCancel() {
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireActivity())
                 .setMessage(R.string.download_cancel_confirm)
@@ -195,6 +250,8 @@ public class DownloadFragment extends Fragment implements SteamDownloadState.Vie
     private void setControlsEnabled(boolean enabled) {
         btnStart.setEnabled(enabled);
         if (btnCheckDlc != null) btnCheckDlc.setEnabled(enabled);
+        if (btnGogDownload != null) btnGogDownload.setEnabled(enabled && com.stormdroid.GogAuth.isSignedIn());
+        if (btnGogSignIn != null) btnGogSignIn.setEnabled(enabled);
         etUser.setEnabled(enabled);
         etPass.setEnabled(enabled);
         etManifest.setEnabled(enabled);

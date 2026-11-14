@@ -357,4 +357,18 @@
     <string name="transfer_cloud_title">Steam 云</string>
     <string name="transfer_cloud_hint">从 Steam 云获取 PC 上的存档，或把此手机上的存档发送过去。</string>
     <string name="transfer_cloud_open">打开</string>
+    <string name="gog_title">GOG</string>
+    <string name="gog_signed_in">已登录 GOG。将下载游戏的 Windows 版本以及你的 GOG 账户拥有的 DLC。</string>
+    <string name="gog_signed_out">在 GOG 上购买了游戏？登录即可下载。此处不支持关联账户（Google 等）登录：请使用 GOG 密码。</string>
+    <string name="gog_sign_in">登录</string>
+    <string name="gog_login_title">登录 GOG</string>
+    <string name="gog_sign_out">退出</string>
+    <string name="gog_download">下载</string>
+    <string name="gog_product_hint">高级：GOG 产品 ID（留空 = Against the Storm）</string>
+    <string name="gog_login_note">使用 GOG 邮箱和密码登录。密码只在 GOG 页面中输入；在你退出或关闭应用前，StormDroid 会保持登录。</string>
+    <string name="gog_login_finishing">正在完成登录…</string>
+    <string name="gog_login_failed">GOG 登录失败：%1$s</string>
+    <string name="gog_login_ok">已登录 GOG</string>
+    <string name="nav_download_gog">从 GOG 下载</string>
+    <string name="gog_download_title">从 GOG 下载 Against the Storm</string>
 </resources>

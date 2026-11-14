@@ -45,6 +45,21 @@
         android:label="@string/nav_cloud_saves" />
 
     <fragment
+        android:id="@+id/gog_download_fragment"
+        android:name="com.stormdroid.fragments.DownloadFragment"
+        android:label="@string/nav_download_gog">
+        <argument
+            android:name="source"
+            app:argType="string"
+            android:defaultValue="gog" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/gog_login_fragment"
+        android:name="com.stormdroid.fragments.GogLoginFragment"
+        android:label="@string/gog_login_title" />
+
+    <fragment
         android:id="@+id/projects_fragment"
         android:name="com.stormdroid.fragments.ProjectsFragment"
         android:label="@string/projects_title" />
@@ -67,6 +82,12 @@
 
     <action android:id="@+id/action_open_cloud_saves"
         app:destination="@id/cloud_saves_fragment" />
+
+    <action android:id="@+id/action_open_gog_download"
+        app:destination="@id/gog_download_fragment" />
+
+    <action android:id="@+id/action_open_gog_login"
+        app:destination="@id/gog_login_fragment" />
 
     <action android:id="@+id/action_open_transfer"
         app:destination="@id/transfer_fragment" />

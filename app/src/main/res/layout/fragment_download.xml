@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Download from Steam (DownloadFragment): the login, an optional manifest id, then progress, a small
-     console log, and Create instance once the archive is in /Download/StormDroid. -->
+<!-- Download the game (DownloadFragment): from Steam (the Game tab) or from GOG (its own drawer item,
+     argument source = gog): the login, then progress, a small console log, and Create instance once the
+     archive is in /Download/StormDroid. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -11,6 +12,13 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
+
+        <!-- Steam (the Game tab) -->
+        <LinearLayout
+            android:id="@+id/section_steam"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
         <TextView
             android:layout_width="wrap_content"
@@ -88,6 +96,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:textAppearance="?attr/textAppearanceBodySmall" />
+        </LinearLayout>
 
         <ProgressBar
             android:id="@+id/progress_dl"
@@ -98,6 +107,66 @@
             android:indeterminate="true"
             android:max="100"
             android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/section_gog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+        <!-- GOG: sign in to GOG, then download the Windows build through GOG Galaxy's content system
+             (GogGalaxyDownloader). Shares the console, progress and Create instance with Steam. -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="@string/gog_download_title"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorPrimary" />
+
+        <TextView
+            android:id="@+id/tv_gog_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/gog_product_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_gog_product"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_gog_sign_in"
+                style="@style/AppTheme.TransferButton.Outlined"
+                android:layout_marginStart="0dp"
+                android:layout_marginEnd="8dp"
+                android:text="@string/gog_sign_in" />
+
+            <Button
+                android:id="@+id/btn_gog_download"
+                style="@style/AppTheme.TransferButton"
+                android:layout_marginEnd="0dp"
+                android:layout_marginStart="8dp"
+                android:text="@string/gog_download" />
+        </LinearLayout>
+
+        </LinearLayout>
 
         <!-- Compact scrolling console (auto-scrolls to the newest line). -->
         <TextView

@@ -128,6 +128,9 @@ public class LauncherActivity extends AppCompatActivity {
             } else if (id == R.id.action_download_game) {
                 navController.navigate(R.id.action_open_download);   // download the game from Steam
                 return true;
+            } else if (id == R.id.action_download_gog) {
+                navController.navigate(R.id.action_open_gog_download);   // the game from GOG
+                return true;
             } else if (id == R.id.action_mods) {
                 navController.navigate(R.id.action_open_mods);   // BepInEx switch and the installed mods
                 return true;

@@ -374,4 +374,19 @@
     <string name="transfer_cloud_title">Steam Cloud</string>
     <string name="transfer_cloud_hint">Get your PC saves from Steam Cloud, or send this phone\'s saves there.</string>
     <string name="transfer_cloud_open">Open</string>
+    <!-- GOG download (GogGalaxyDownloader, GogLoginFragment). -->
+    <string name="gog_title">GOG</string>
+    <string name="gog_signed_in">Signed in to GOG. Downloads the Windows version of the game with the DLCs your GOG account owns.</string>
+    <string name="gog_signed_out">Bought the game on GOG? Sign in to download it. Linked accounts (Google and others) do not work here: use your GOG password.</string>
+    <string name="gog_sign_in">Sign in</string>
+    <string name="gog_login_title">Sign in to GOG</string>
+    <string name="gog_sign_out">Sign out</string>
+    <string name="gog_download">Download</string>
+    <string name="gog_product_hint">Advanced: GOG product id (blank = Against the Storm)</string>
+    <string name="gog_login_note">Sign in with your GOG e-mail and password. The password stays on GOG\'s page; StormDroid keeps the sign-in until you sign out or the app closes.</string>
+    <string name="gog_login_finishing">Finishing the sign-in…</string>
+    <string name="gog_login_failed">GOG sign-in failed: %1$s</string>
+    <string name="gog_login_ok">Signed in to GOG</string>
+    <string name="nav_download_gog">Download from GOG</string>
+    <string name="gog_download_title">Download Against the Storm from GOG</string>
 </resources>
