@@ -330,6 +330,8 @@ public final class NativeEngine {
         String raw = is.getEnvVars();
         if (raw == null || raw.trim().isEmpty()) return;
         for (String token : raw.trim().split("\\s+")) {
+            // The owned DLCs come only from the Steam check (SteamDownloader), never from this field.
+            if (token.startsWith("STORMDROID_OWNED_DLCS=")) continue;
             if (token.indexOf('=') > 0) env.add(token);
         }
     }
