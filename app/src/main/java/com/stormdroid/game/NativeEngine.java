@@ -163,6 +163,17 @@ public final class NativeEngine {
         return null;
     }
 
+    /** GOG product ids of the content DLCs and the game's DLCType flag for each (as SteamDownloader's). */
+    private static final long[][] GOG_DLCS = {{1440688316L, 1}, {2029824167L, 2}};
+
+    /** The DLCs a GOG copy was installed with: their marker files next to the game. */
+    static int gogDlcs(File gameDir) {
+        int mask = 0;
+        for (long[] d : GOG_DLCS)
+            if (new File(gameDir, "goggame-" + d[0] + ".info").isFile()) mask |= (int) d[1];
+        return mask;
+    }
+
     /** The enabled mods with their versions, for the launch config of a report. */
     private static String enabledMods(File gameDir) {
         StringBuilder sb = new StringBuilder();
@@ -242,6 +253,11 @@ public final class NativeEngine {
         String gameVersion = gameVersion(dataDir);
         if (gameVersion != null) env.add("STORMDROID_GAME_VERSION=" + gameVersion);
         int ownedDlcs = com.stormdroid.LauncherPreferences.requireSingleton().getOwnedDlcs();
+        // A GOG copy carries a marker file for each DLC it was installed with (goggame-<product id>.info,
+        // as GOG's installer and its content system put them): those DLCs are owned on GOG. The GOG build
+        // asks GOG Galaxy, whose Windows library cannot load here. Untested on the GOG build itself.
+        int gogDlcs = gogDlcs(gameDir);
+        if (gogDlcs > 0) ownedDlcs = Math.max(ownedDlcs, 0) | gogDlcs;
         if (ownedDlcs > 0) env.add("STORMDROID_OWNED_DLCS=" + ownedDlcs);
         boolean mods = addMods(context, instance, gameDir, dataDir, env);
         addUserEnvironment(is, env);
@@ -265,7 +281,8 @@ public final class NativeEngine {
                 + "graphics      : profile written now " + graphics + " (0 = none, 1 = Low, 2 = Very low), matches "
                 + GameGraphics.detect(context) + "\n"
                 + "game version  : " + (gameVersion != null ? gameVersion : "not found (the APK's is used)") + "\n"
-                + "dlcs          : " + (ownedDlcs < 0 ? "not checked" : ownedDlcs) + " (1 = Keepers of the Stone, 2 = Nightwatchers)\n"
+                + "dlcs          : " + (ownedDlcs < 0 ? "not checked" : ownedDlcs) + " (1 = Keepers of the Stone, 2 = Nightwatchers; "
+                        + "from GOG markers " + gogDlcs + ")\n"
                 + "mods          : " + (mods ?"ON (BepInEx " + com.stormdroid.ModManager.BEPINEX_VERSION + ", "
                         + com.stormdroid.ModManager.countEnabled(gameDir) + " enabled: " + enabledMods(gameDir) + ")"
                         : (is.isModSupport() ? "off (BepInEx setup failed)" : "off")) + "\n"
